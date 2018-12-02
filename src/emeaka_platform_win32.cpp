@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include <cinttypes>
+#include <cstdio>
 
 #include "emeaka.h"
 #include "emeaka_platform.h"
@@ -389,6 +390,10 @@ internal void Win32FillSoundBuffer(Win32SoundOutput *soundOutput, DWORD byteToLo
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLine, int showCode)
 {
+   LARGE_INTEGER frequency;
+   QueryPerformanceFrequency(&frequency);
+   int64_t performanceCounterFrequency = frequency.QuadPart;
+
    Win32LoadXInput();
 
    WNDCLASSEXA windowClass = {};
@@ -434,7 +439,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
          SoundOutput.SamplesPerSecond = 48000;
          SoundOutput.ToneHz = 263;
-         SoundOutput.ToneVolume = 4000;
+         SoundOutput.ToneVolume = 1500;
          SoundOutput.RunningSampleIndex = 0;
          SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond / SoundOutput.ToneHz;
          SoundOutput.BytesPerSample = sizeof(int16_t) * 2;
@@ -447,8 +452,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
          GlobalSoundBuffer->Play(0, 0, DSBPLAY_LOOPING);
 
+         LARGE_INTEGER lastCounter;
+         QueryPerformanceCounter(&lastCounter);
+         uint64_t lastCycleCount = __rdtsc();
          while (Running)
          {
+
             while (PeekMessage(&message, window, 0, 0, PM_REMOVE))
             {
                if (message.message == WM_QUIT)
@@ -460,7 +469,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             }
 
             //game input, do we need more frequent polls
-             
+
             for (int controllerIndex = 0; controllerIndex < XUSER_MAX_COUNT; ++controllerIndex)
             {
                XINPUT_STATE state;
@@ -515,11 +524,30 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
                Win32FillSoundBuffer(&SoundOutput, byteToLock, bytesToWrite);
             }
+
             HDC deviceContext = GetDC(window);
 
             Win32WindowDimensions windowDimensions = GetWin32WindowDimensions(window);
             Win32DisplayBufferInWindow(deviceContext, windowDimensions.Width, windowDimensions.Height, &OffscreenBuffer, 0, 0, windowDimensions.Width, windowDimensions.Height);
             ReleaseDC(window, deviceContext);
+
+            LARGE_INTEGER endCounter;
+            QueryPerformanceCounter(&endCounter);
+            uint64_t endCycleCount = __rdtsc();
+            local_persist int printy = 0;
+            if ((printy++ % 60) == 0)
+            {
+               int64_t counterElapsed = endCounter.QuadPart - lastCounter.QuadPart;
+               uint64_t cyclesElapsed = endCycleCount - lastCycleCount;
+               char counterReport[512];
+               float msElapsed = (1000.f * (float)counterElapsed) / (float)performanceCounterFrequency;
+               int64_t fps = performanceCounterFrequency / counterElapsed;
+               float mcpf = (float)cyclesElapsed / 1000.f / 1000.f;
+               snprintf(counterReport, sizeof(counterReport), "Frame Information: %0.2fmc/f   %0.2fms/f   %lldfps\n", mcpf, msElapsed, fps);
+               OutputDebugStringA(counterReport);
+            }
+            lastCycleCount = endCycleCount;
+            lastCounter.QuadPart = endCounter.QuadPart;
          }
       }
    }
