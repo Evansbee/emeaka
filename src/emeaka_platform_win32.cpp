@@ -460,7 +460,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             }
 
             //game input, do we need more frequent polls
-
+             
             for (int controllerIndex = 0; controllerIndex < XUSER_MAX_COUNT; ++controllerIndex)
             {
                XINPUT_STATE state;
