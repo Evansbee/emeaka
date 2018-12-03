@@ -18,20 +18,22 @@ internal void TempRenderWeirdGradient(GameOffscreenBuffer *offscreenBuffer, int 
   }
 }
 
+//let's agree on 
+
 internal void TempComposeSineWave(GameSoundBuffer *soundBuffer)
 {
-  local_persist float tSine;
+  local_persist float tSine = 0.0f;
   int16_t toneVolume = 1000;
   int hz = 263;
   int WavePeriod = soundBuffer->SamplesPerSecond / hz;
-  int16_t *sample_out = (int16_t *)soundBuffer->SampleBuffer;
+  int16_t *sample_out = soundBuffer->SampleBuffer;
   //DWORD soundBuffer1SampleCount = soundBuffer1Size / soundOutput->BytesPerSample;
   for (int sampleIndex = 0; sampleIndex < soundBuffer->SampleCount; ++sampleIndex)
   {
     float sinValue = sinf(tSine);
     int16_t sampleValue = (int16_t)(sinValue * (float)toneVolume);
     *sample_out++ = sampleValue;
-    *sample_out++ = sampleValue;
+    *sample_out++ = 0;//sampleValue;
 
     tSine += 2.0f * PI32 / (float)WavePeriod;
   }

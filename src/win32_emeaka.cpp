@@ -344,14 +344,12 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM wPara
 struct Win32SoundOutput
 {
    int SamplesPerSecond;
-   int ToneHz;
-   int16_t ToneVolume;
    uint32_t RunningSampleIndex;
-   int WavePeriod;
    int BytesPerSample;
+   int Channels;
    int BufferSize;
    int LatencySampleCount;
-   float tSine;
+
 };
 
 Win32SoundOutput SoundOutput = {};
@@ -365,48 +363,25 @@ internal void Win32FillSoundBuffer(Win32SoundOutput *soundOutput, DWORD byteToLo
    size_t writeCount = 0;
    if (SUCCEEDED(GlobalSoundBuffer->Lock(byteToLock, bytesToWrite, &soundBuffer1, &soundBuffer1Size, &soundBuffer2, &soundBuffer2Size, 0)))
    {
-      int16_t *destBank1 = (int16_t *)soundBuffer1;
-      int16_t *destBank2 = (int16_t *)soundBuffer2;
-      int16_t *srcSample = sourceBuffer->SampleBuffer;
-      DWORD bank1SampleCount = soundBuffer1Size / soundOutput->BytesPerSample;
-      DWORD bank2SampleCount = soundBuffer2Size / soundOutput->BytesPerSample;
-      for (int srcSampleIndex = 0; srcSampleIndex < sourceBuffer->SampleCount && (srcSampleIndex < bank1SampleCount + bank2SampleCount); srcSampleIndex++)
+      int32_t *destBank1 = (int32_t *)soundBuffer1;
+      int32_t *destBank2 = (int32_t *)soundBuffer2;
+      int32_t *srcSample = (int32_t *)sourceBuffer->SampleBuffer;
+      DWORD bank1SampleCount = soundBuffer1Size / 4; //) soundOutput->BytesPerSample;
+      DWORD bank2SampleCount = soundBuffer2Size / 4; // soundOutput->BytesPerSample;
+      for (int srcSampleIndex = 0; srcSampleIndex < sourceBuffer->SampleCount && srcSampleIndex < bank1SampleCount + bank2SampleCount; srcSampleIndex++)
       {
 
          if (srcSampleIndex < bank1SampleCount)
          {
-            destBank1[srcSampleIndex] = srcSample[srcSampleIndex >> 1];
-            destBank1[srcSampleIndex + 1] = srcSample[(srcSampleIndex >> 1) + 1];
+            destBank1[srcSampleIndex] = srcSample[srcSampleIndex];
          }
          else
          {
             int destSample = srcSampleIndex - bank1SampleCount;
-            destBank2[destSample] = srcSample[(srcSampleIndex >> 1)];
-            destBank2[destSample + 1] = srcSample[(srcSampleIndex >> 1) + 1];
+            destBank2[destSample] = srcSample[srcSampleIndex];
          }
          soundOutput->RunningSampleIndex++;
       }
-      // DWORD soundBuffer1SampleCount = soundBuffer1Size / soundOutput->BytesPerSample;
-      // for (DWORD sampleIndex = 0; sampleIndex < soundBuffer1SampleCount; ++sampleIndex)
-      // {
-
-      //    *sample_out++ = sampleValue;
-      //    *sample_out++ = sampleValue;
-      //
-      //    soundOutput->tSine += 2.0f * PI32 / (float)soundOutput->WavePeriod;
-      // }
-
-      // sample_out = (int16_t *)soundBuffer2;
-      // DWORD soundBuffer2SampleCount = soundBuffer2Size / soundOutput->BytesPerSample;
-      // for (DWORD sampleIndex = 0; sampleIndex < soundBuffer2SampleCount; ++sampleIndex)
-      // {
-      //    float sinValue = sinf(soundOutput->tSine);
-      //    int16_t sampleValue = (int16_t)(sinValue * (float)soundOutput->ToneVolume);
-      //    *sample_out++ = sampleValue;
-      //    *sample_out++ = sampleValue;
-      //    soundOutput->RunningSampleIndex++;
-      //    soundOutput->tSine += 2.0f * PI32 / (float)soundOutput->WavePeriod;
-      // }
 
       GlobalSoundBuffer->Unlock(soundBuffer1, soundBuffer1Size, soundBuffer2, soundBuffer2Size);
    }
@@ -462,10 +437,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
          //sound test
 
          SoundOutput.SamplesPerSecond = 48000;
-         SoundOutput.ToneHz = 263;
-         SoundOutput.ToneVolume = 1500;
+
          SoundOutput.RunningSampleIndex = 0;
-         SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond / SoundOutput.ToneHz;
          SoundOutput.BytesPerSample = sizeof(int16_t) * 2;
          SoundOutput.BufferSize = SoundOutput.SamplesPerSecond * SoundOutput.BytesPerSample;
          SoundOutput.LatencySampleCount = SoundOutput.SamplesPerSecond / 15;
@@ -522,9 +495,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
                   xOffset += LeftStickX / 4096;
                   yOffset -= LeftStickY / 4096;
-
-                  SoundOutput.ToneHz = 512 + (int16_t)(256.f * ((float)RightStickY / 30000.f));
-                  SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond / SoundOutput.ToneHz;
                }
             }
 
@@ -538,7 +508,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             GameSoundBuffer soundOutputBuffer = {};
             soundOutputBuffer.SampleCount = SoundOutput.SamplesPerSecond / 30;
             soundOutputBuffer.SamplesPerSecond = SoundOutput.SamplesPerSecond;
-            int16_t samples[2 * 48000 / 30];
+            int16_t *samples = (int16_t *)VirtualAlloc(0,soundOutputBuffer.SampleCount * sizeof(int16_t) * 2,MEM_COMMIT, PAGE_READWRITE);
             soundOutputBuffer.SampleBuffer = samples;
             GameUpdateAndRender((GameOffscreenBuffer *)(&OffscreenBuffer), &soundOutputBuffer, xOffset, yOffset);
 
