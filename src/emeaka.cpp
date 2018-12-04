@@ -38,41 +38,25 @@ internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, int toneHz)
   }
 }
 
-internal void GameUpdateAndRender(GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer *inputBuffer)
+internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer *inputBuffer)
 {
-  local_persist int xOffset = 0;
-  local_persist int yOffset = 0;
-  local_persist int toneHz = 261;
-  if (inputBuffer->ControllerInput[0].Connected)
+
+  GameState *gameState = (GameState *)gameMemory->PermanentStorage;
+  if (!gameMemory->IsInitialized)
   {
-    if (inputBuffer->ControllerInput[0].AButton.IsDown)
-    {
-      toneHz = 466;
-    }
-  else if (inputBuffer->ControllerInput[0].BButton.IsDown)
-  {
-toneHz = 493;
-  }
-  else if (inputBuffer->ControllerInput[0].XButton.IsDown)
-  {
-    toneHz = 523;
-  }
-  else if (inputBuffer->ControllerInput[0].YButton.IsDown)
-  {toneHz = 554;
-    
-  }
-  else
-  {
-    toneHz = 60;
-  }
-    yOffset += 5.f * inputBuffer->ControllerInput[0].LeftStick.EndY;
-    //toneHz = int(512.f + inputBuffer->ControllerInput[0].LeftStick.EndY * 256.f);
+    gameState->ToneHz = 261;
+    gameState->BlueOffset = 0;
+    gameState->GreenOffset = 0;
+    gameMemory->IsInitialized = true;
   }
 
-
-  TempRenderWeirdGradient(offscreenBuffer, xOffset, yOffset);
-  TempComposeSineWave(soundBuffer, toneHz);
-
+  gameState->BlueOffset += 5.f * inputBuffer->ControllerInput[0].LeftStick.EndX;
+  gameState->GreenOffset -= 5.f * inputBuffer->ControllerInput[0].LeftStick.EndY;
+  gameState->ToneHz = int(512.f + inputBuffer->ControllerInput[0].RightStick.EndY * 256.f);
+  TempRenderWeirdGradient(offscreenBuffer, gameState->BlueOffset, gameState->GreenOffset);
+  TempComposeSineWave(soundBuffer, gameState->ToneHz);
+  //Todo: make this more complicated
+  
 //Todo: make this more complicated
 //GameOutputSound(int sampleCount, soundBuffer)
 }

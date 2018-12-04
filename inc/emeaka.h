@@ -12,7 +12,7 @@
 
 //Macros
 
-#define ArrayCount(a) (sizeof(a)/sizeof((a)[0]))
+#define ArrayCount(array) (sizeof(array)/sizeof((array)[0]))
 
 
 //types
@@ -50,11 +50,10 @@ struct GameAnalogStickState
   float EndY;
 };
 
-
 struct GameControllerInput
 {
   bool Connected;
-  
+
   union {
     GameButtonState Buttons[12];
     struct
@@ -80,13 +79,26 @@ struct GameControllerInput
 
   float RightTrigger;
   float LeftTrigger;
-
 };
-
 
 struct GameInputBuffer
 {
+  //keyboard junk?
   GameControllerInput ControllerInput[4];
+};
+
+struct GameState
+{
+  int ToneHz;
+  int GreenOffset;
+  int BlueOffset;
+};
+
+struct GameMemory
+{
+  bool IsInitialized;
+  size_t PermanentStorageSize;
+  void* PermanentStorage;
 };
 //Services platform layer provides to game
 //who knows..
@@ -94,4 +106,4 @@ struct GameInputBuffer
 //Game provides to platform layer
 //input, bitmap to output and sound output, timing
 internal void
-GameUpdateAndRender(GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer &inputBuffer);
+GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer &inputBuffer);

@@ -432,6 +432,11 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
          MSG message;
          Running = true;
 
+         GameMemory gameMemory;
+         gameMemory.PermanentStorage = VirtualAlloc(0,sizeof(GameState),MEM_COMMIT, PAGE_READWRITE);
+         gameMemory.PermanentStorageSize = sizeof(GameState);
+         gameMemory.IsInitialized = false;
+
          //sound test
          Win32SoundOuput win32SoundOutput = {};
          win32SoundOutput.SamplesPerSecond = 48000;
@@ -596,7 +601,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
             soundOutputBuffer.SampleCount = bytesToWrite / win32SoundOutput.BytesPerSample;
 
-            GameUpdateAndRender((GameOffscreenBuffer *)(&OffscreenBuffer), &soundOutputBuffer, currentInputBuffer);
+            GameUpdateAndRender(&gameMemory, (GameOffscreenBuffer *)(&OffscreenBuffer), &soundOutputBuffer, currentInputBuffer);
 
             //swap buffers
             GameInputBuffer *tempInputBuffer = currentInputBuffer;
