@@ -321,6 +321,7 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM wPara
 
    case WM_PAINT:
    {
+ 
       PAINTSTRUCT Paint;
       HDC deviceContext = BeginPaint(window, &Paint);
 
@@ -332,6 +333,7 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM wPara
       Win32WindowDimensions windowDimensions = GetWin32WindowDimensions(window);
       Win32DisplayBufferInWindow(deviceContext, windowDimensions.Width, windowDimensions.Height, &OffscreenBuffer, x, y, width, height);
       EndPaint(window, &Paint);
+
    }
    break;
 
@@ -434,6 +436,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
    windowClass.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
    windowClass.lpszClassName = "emeakaWindowClass";
    windowClass.hIconSm = LoadIcon(windowClass.hInstance, IDI_APPLICATION);
+
 
    if (RegisterClassExA(&windowClass))
    {
