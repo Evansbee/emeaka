@@ -26,10 +26,15 @@ struct GameSoundBuffer
   size_t SampleCount;
   int32_t SamplesPerSecond;
 };
+
+struct GameInputBuffer
+{
+
+};
 //Services platform layer provides to game
 //who knows..
 
 //Game provides to platform layer
 //input, bitmap to output and sound output, timing
 internal void
-GameUpdateAndRender(GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, int xOffset, int yOffset, int toneHz);
+GameUpdateAndRender(GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer &inputBuffer);

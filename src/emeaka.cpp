@@ -38,8 +38,11 @@ internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, int toneHz)
   }
 }
 
-internal void GameUpdateAndRender(GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, int xOffset, int yOffset, int toneHz)
+internal void GameUpdateAndRender(GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer *inputBuffer)
 {
+  int xOffset = 0;
+  int yOffset = 0;
+  int toneHz = 261;
   TempRenderWeirdGradient(offscreenBuffer, xOffset, yOffset);
   TempComposeSineWave(soundBuffer, toneHz);
 
