@@ -30,8 +30,3 @@ struct Win32WindowDimensions
    int Width;
    int Height;
 };
-
-struct Win32InputBuffer
-{
-
-};

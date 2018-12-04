@@ -10,6 +10,11 @@
 
 #define PI32 3.14159265359f
 
+//Macros
+
+#define ArrayCount(a) (sizeof(a)/sizeof((a)[0]))
+
+
 //types
 struct GameOffscreenBuffer
 {
@@ -27,9 +32,61 @@ struct GameSoundBuffer
   int32_t SamplesPerSecond;
 };
 
+struct GameButtonState
+{
+  uint32_t HalfTransitions;
+  bool IsDown;
+};
+
+struct GameAnalogStickState
+{
+  float StartX;
+  float StartY;
+  float MinX;
+  float MinY;
+  float MaxX;
+  float MaxY;
+  float EndX;
+  float EndY;
+};
+
+
+struct GameControllerInput
+{
+  bool Connected;
+  
+  union {
+    GameButtonState Buttons[12];
+    struct
+    {
+      GameButtonState UpButton;
+      GameButtonState DownButton;
+      GameButtonState LeftButton;
+      GameButtonState RightButton;
+      GameButtonState StartButton;
+      GameButtonState BackButton;
+      GameButtonState LeftThumbButton;
+      GameButtonState RightThumbButton;
+      GameButtonState LeftShoulder;
+      GameButtonState RightShoulder;
+      GameButtonState AButton;
+      GameButtonState BButton;
+      GameButtonState XButton;
+      GameButtonState YButton;
+    };
+  };
+  GameAnalogStickState LeftStick;
+  GameAnalogStickState RightStick;
+
+  float RightTrigger;
+  float LeftTrigger;
+
+};
+
+
 struct GameInputBuffer
 {
-
+  GameControllerInput ControllerInput[4];
 };
 //Services platform layer provides to game
 //who knows..

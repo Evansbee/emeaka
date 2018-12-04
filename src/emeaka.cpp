@@ -18,7 +18,7 @@ internal void TempRenderWeirdGradient(GameOffscreenBuffer *offscreenBuffer, int 
   }
 }
 
-//let's agree on 
+//let's agree on
 
 internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, int toneHz)
 {
@@ -32,7 +32,7 @@ internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, int toneHz)
     float sinValue = sinf(tSine);
     int16_t sampleValue = (int16_t)(sinValue * (float)toneVolume);
     *sample_out++ = sampleValue;
-    *sample_out++ = sampleValue;//sampleValue;
+    *sample_out++ = sampleValue; //sampleValue;
 
     tSine += 2.0f * PI32 / (float)WavePeriod;
   }
@@ -40,12 +40,39 @@ internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, int toneHz)
 
 internal void GameUpdateAndRender(GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer *inputBuffer)
 {
-  int xOffset = 0;
-  int yOffset = 0;
-  int toneHz = 261;
+  local_persist int xOffset = 0;
+  local_persist int yOffset = 0;
+  local_persist int toneHz = 261;
+  if (inputBuffer->ControllerInput[0].Connected)
+  {
+    if (inputBuffer->ControllerInput[0].AButton.IsDown)
+    {
+      toneHz = 466;
+    }
+  else if (inputBuffer->ControllerInput[0].BButton.IsDown)
+  {
+toneHz = 493;
+  }
+  else if (inputBuffer->ControllerInput[0].XButton.IsDown)
+  {
+    toneHz = 523;
+  }
+  else if (inputBuffer->ControllerInput[0].YButton.IsDown)
+  {toneHz = 554;
+    
+  }
+  else
+  {
+    toneHz = 60;
+  }
+    yOffset += 5.f * inputBuffer->ControllerInput[0].LeftStick.EndY;
+    //toneHz = int(512.f + inputBuffer->ControllerInput[0].LeftStick.EndY * 256.f);
+  }
+
+
   TempRenderWeirdGradient(offscreenBuffer, xOffset, yOffset);
   TempComposeSineWave(soundBuffer, toneHz);
 
-  //Todo: make this more complicated
-  //GameOutputSound(int sampleCount, soundBuffer)
+//Todo: make this more complicated
+//GameOutputSound(int sampleCount, soundBuffer)
 }
