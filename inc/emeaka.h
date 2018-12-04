@@ -32,4 +32,4 @@ struct GameSoundBuffer
 //Game provides to platform layer
 //input, bitmap to output and sound output, timing
 internal void
-GameUpdateAndRender(GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, int xOffset, int yOffset);
+GameUpdateAndRender(GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, int xOffset, int yOffset, int toneHz);
