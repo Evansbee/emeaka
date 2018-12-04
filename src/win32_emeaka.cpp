@@ -3,7 +3,7 @@
 #include <Xinput.h>
 #include <dsound.h>
 #include <math.h>
-
+#include <cstdint>
 #include <cstdio>
 
 //your own includes
@@ -343,15 +343,13 @@ internal void Win32ClearSoundBuffer(Win32SoundOuput *soundOutput)
 
 internal void Win32FillSoundBuffer(Win32SoundOuput *soundOutput, DWORD byteToLock, DWORD bytesToWrite, GameSoundBuffer *sourceBuffer)
 {
-   void *soundBuffer1;
-   void *soundBuffer2;
+   int32_t *soundBuffer1;
+   int32_t *soundBuffer2;
    DWORD soundBuffer1Size;
    DWORD soundBuffer2Size;
    size_t writeCount = 0;
-   if (SUCCEEDED(soundOutput->SoundBuffer->Lock(byteToLock, bytesToWrite, &soundBuffer1, &soundBuffer1Size, &soundBuffer2, &soundBuffer2Size, 0)))
+   if (SUCCEEDED(soundOutput->SoundBuffer->Lock(byteToLock, bytesToWrite, &(void *)soundBuffer1, &soundBuffer1Size, &(void *)soundBuffer2, &soundBuffer2Size, 0)))
    {
-      int32_t *destBank1 = (int32_t *)soundBuffer1;
-      int32_t *destBank2 = (int32_t *)soundBuffer2;
       int32_t *srcSample = (int32_t *)sourceBuffer->SampleBuffer;
       DWORD bank1SampleCount = soundBuffer1Size / 4; //) soundOutput->BytesPerSample;
       DWORD bank2SampleCount = soundBuffer2Size / 4; // soundOutput->BytesPerSample;
@@ -360,12 +358,12 @@ internal void Win32FillSoundBuffer(Win32SoundOuput *soundOutput, DWORD byteToLoc
 
          if (srcSampleIndex < bank1SampleCount)
          {
-            destBank1[srcSampleIndex] = srcSample[srcSampleIndex];
+            soundBuffer1[srcSampleIndex] = srcSample[srcSampleIndex];
          }
          else
          {
             int destSample = srcSampleIndex - bank1SampleCount;
-            destBank2[destSample] = srcSample[srcSampleIndex];
+            soundBuffer2[destSample] = srcSample[srcSampleIndex];
          }
          soundOutput->RunningSampleIndex++;
       }
@@ -455,7 +453,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             }
 
             //game input, do we need more frequent polls
-            int toneHz = 263;
             for (int controllerIndex = 0; controllerIndex < XUSER_MAX_COUNT; ++controllerIndex)
             {
                XINPUT_STATE state;
@@ -481,6 +478,26 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                   int16_t RightStickY = pad->sThumbRY;
                   uint8_t RightTrigger = pad->bRightTrigger;
                   uint8_t LeftTrigger = pad->bLeftTrigger;
+
+                  float LeftStickXNormalized = 0.0;
+                  float LeftStickYNormalized = 0.0;
+                  if(LeftStickX >= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+                  {
+                     LeftStickXNormalized = (float)LeftStickX / (float)INT16_MAX
+                  }
+                  if(LeftStickX <= -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+                  {
+                     LeftStickXNormalized = -1.f * (float)LeftStickX / (float)INT16_MIN
+                  }
+                  if(LeftStickY >= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+                  {
+                     LeftStickYNormalized = (float)LeftStickY / (float)INT16_MAX
+                  }
+                  if(LeftStickY <= -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+                  {
+                     LeftStickYNormalized = -1.f * (float)LeftStickY / (float)INT16_MIN
+                  }
+                  
                }
             }
 
