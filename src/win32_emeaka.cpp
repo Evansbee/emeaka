@@ -20,7 +20,7 @@ global_variable Win32OffscreenBuffer OffscreenBuffer;
 global_variable bool Running;
 
 //Stubbing out XInput to allow for dynamic loading
-const WORD Win32GamepadButtonScanOrder [] = {
+const WORD Win32GamepadButtonScanOrder[] = {
     XINPUT_GAMEPAD_DPAD_UP,
     XINPUT_GAMEPAD_DPAD_DOWN,
     XINPUT_GAMEPAD_DPAD_LEFT,
@@ -179,27 +179,25 @@ internal void Win32InitDSound(HWND window, Win32SoundOuput *soundOutput)
 }
 //end dsound
 
-
 internal DebugFileResult PlatformReadEntireFile(char *filename)
 {
    HANDLE fileHandle = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
    DebugFileResult fileReadResult = {};
 
-   if(fileHandle != INVALID_HANDLE_VALUE)
+   if (fileHandle != INVALID_HANDLE_VALUE)
    {
       LARGE_INTEGER fileSize;
-      if(GetFileSizeEx(fileHandle, &fileSize))
+      if (GetFileSizeEx(fileHandle, &fileSize))
       {
          DWORD bytesRead;
-         fileReadResult.Contents = VirtualAlloc(0,fileSize.QuadPart,MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-         if(fileReadResult.Contents)
+         fileReadResult.Contents = VirtualAlloc(0, fileSize.QuadPart, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+         if (fileReadResult.Contents)
          {
             Assert(fileSize.QuadPart <= 0xFFFFFFFF, "Only 32Bit Files supported in windows API");
             uint32_t fileSize32 = (uint32_t)fileSize.QuadPart;
-            if(ReadFile(fileHandle, fileReadResult.Contents, fileSize32, &bytesRead, 0) && bytesRead == fileSize32)
+            if (ReadFile(fileHandle, fileReadResult.Contents, fileSize32, &bytesRead, 0) && bytesRead == fileSize32)
             {
                fileReadResult.FileSize = bytesRead;
-
             }
             else
             {
@@ -208,12 +206,10 @@ internal DebugFileResult PlatformReadEntireFile(char *filename)
          }
          else
          {
-
          }
       }
       else
       {
-
       }
       CloseHandle(fileHandle);
    }
@@ -222,20 +218,19 @@ internal DebugFileResult PlatformReadEntireFile(char *filename)
 
 internal void PlatformFreeFileMemory(void *memory)
 {
-   if(memory)
+   if (memory)
    {
-      VirtualFree(memory,0,MEM_RELEASE);
+      VirtualFree(memory, 0, MEM_RELEASE);
    }
-
 }
 internal bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *memory)
 {
    HANDLE fileHandle = CreateFileA(filename, GENERIC_WRITE, 0, 0, CREATE_NEW, 0, 0);
-   if(fileHandle != INVALID_HANDLE_VALUE)
+   if (fileHandle != INVALID_HANDLE_VALUE)
    {
       Assert(memorySize <= 0xFFFFFFFF, "Windows only supports 32 bit files");
       DWORD bytesWritten;
-      if(WriteFile(fileHandle, memory, (DWORD)memorySize, &bytesWritten, 0) && bytesWritten == memorySize)
+      if (WriteFile(fileHandle, memory, (DWORD)memorySize, &bytesWritten, 0) && bytesWritten == memorySize)
       {
          CloseHandle(fileHandle);
          return true;
@@ -251,8 +246,6 @@ internal bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *m
       return false;
    }
 }
-
-
 
 internal Win32WindowDimensions GetWin32WindowDimensions(HWND window)
 {
@@ -303,7 +296,94 @@ internal void Win32DisplayBufferInWindow(HDC deviceContext, int windowWidth, int
        DIB_RGB_COLORS,
        SRCCOPY);
 }
+internal void Win32ProcessWindowMessages(HWND window, GameInputBuffer *inputBuffer)
+{
+   MSG message;
+   while (PeekMessage(&message, window, 0, 0, PM_REMOVE))
+   {
+      if (message.message == WM_QUIT)
+      {
+         Running = false;
+      }
+      else if (message.message == WM_SYSKEYDOWN ||
+               message.message == WM_SYSKEYUP ||
+               message.message == WM_KEYDOWN ||
+               message.message == WM_KEYUP)
+      {
+         LPARAM lParam = message.lParam;
+         WPARAM wParam = message.wParam;
+         uint32_t VKCode = (uint32_t)wParam;
+         bool wasDown = ((lParam & (1 << 30)) != 0);
+         bool isDown = ((lParam & (1 << 31)) == 0);
+         if (isDown != wasDown)
+         {
+            if (VKCode == VK_UP)
+            {
+               inputBuffer->ControllerInput[0].UpButton.IsDown = isDown;
+               inputBuffer->ControllerInput[0].UpButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
+            }
 
+            else if (VKCode == VK_DOWN)
+            {
+               inputBuffer->ControllerInput[0].DownButton.IsDown = isDown;
+               inputBuffer->ControllerInput[0].DownButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
+            }
+            else if (VKCode == VK_LEFT)
+            {
+               inputBuffer->ControllerInput[0].LeftButton.IsDown = isDown;
+               inputBuffer->ControllerInput[0].LeftButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
+            }
+            else if (VKCode == VK_RIGHT)
+            {
+               inputBuffer->ControllerInput[0].RightButton.IsDown = isDown;
+               inputBuffer->ControllerInput[0].RightButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
+            }
+            else if (VKCode == VK_ESCAPE)
+            {
+            }
+            else if (VKCode == VK_SPACE)
+            {
+            }
+            else if (VKCode == 'W')
+            {
+               inputBuffer->ControllerInput[0].UpButton.IsDown = isDown;
+               inputBuffer->ControllerInput[0].UpButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
+            }
+            else if (VKCode == 'A')
+            {
+               inputBuffer->ControllerInput[0].LeftButton.IsDown = isDown;
+               inputBuffer->ControllerInput[0].LeftButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
+            }
+            else if (VKCode == 'S')
+            {
+               inputBuffer->ControllerInput[0].DownButton.IsDown = isDown;
+               inputBuffer->ControllerInput[0].DownButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
+            }
+            else if (VKCode == 'D')
+            {
+               inputBuffer->ControllerInput[0].RightButton.IsDown = isDown;
+               inputBuffer->ControllerInput[0].RightButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
+            }
+            else if (VKCode == 'Q')
+            {
+               Running = false;
+            }
+            else if (VKCode == 'E')
+            {
+            }
+            else if (VKCode == VK_F4 && ((lParam & (1 << 29)) != 0))
+            {
+               Running = false;
+            }
+         }
+      }
+      else
+      {
+         TranslateMessage(&message);
+         DispatchMessage(&message);
+      }
+   }
+}
 LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
 {
    switch (message)
@@ -312,8 +392,7 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM wPara
    case WM_SYSKEYUP:
    case WM_KEYDOWN:
    case WM_KEYUP:
-      Assert(false, "FAILURE")
-   break;
+      Assert(false, "FAILURE") break;
 
    case WM_PAINT:
    {
@@ -345,6 +424,103 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM wPara
    }
 
    return 0;
+}
+
+internal void Win32NormalizeStick(int16_t rawX, int16_t rawY, float *normalizedX, float *normalizedY, int16_t deadZone)
+{
+   if (rawX >= deadZone)
+   {
+      *normalizedX = (float)(rawX - deadZone) / (float)(INT16_MAX - deadZone);
+   }
+   else if (rawX <= -deadZone)
+   {
+      *normalizedX = -1.f * (float)(rawX + deadZone) / (float)(INT16_MIN + deadZone);
+   }
+   else
+   {
+      *normalizedX = 0.f;
+   }
+
+   if (rawY >= deadZone)
+   {
+      *normalizedY = (float)(rawY - deadZone) / (float)(INT16_MAX - deadZone);
+   }
+   else if (rawY <= -deadZone)
+   {
+      *normalizedY = -1.f * (float)(rawY + deadZone) / (float)(INT16_MIN + deadZone);
+   }
+   else
+   {
+      *normalizedY = 0.f;
+   }
+}
+
+internal void Win32NormalizeTrigger(int16_t raw, float *normalized, int16_t deadZone)
+{
+   if (raw >= deadZone)
+   {
+      *normalized = (float)(raw - deadZone) / (float)(255 - deadZone);
+   }
+   else
+   {
+      *normalized = 0.f;
+   }
+}
+internal void Win32ProcessGamepadInput(XINPUT_GAMEPAD *gamepad, size_t controllerIndex, GameInputBuffer *currentInputBuffer, GameInputBuffer *lastInputBuffer)
+{
+
+   currentInputBuffer->ControllerInput[controllerIndex].Connected = true;
+   //this scan order works becasue platform and game are aligned in windows, don't make the same assumption in other
+   //platforms
+   for (int i = 0; i < ArrayCount(Win32GamepadButtonScanOrder); ++i)
+   {
+
+      currentInputBuffer->ControllerInput[controllerIndex].Buttons[i].IsDown = (gamepad->wButtons & Win32GamepadButtonScanOrder[i]) > 0;
+      if (lastInputBuffer->ControllerInput[controllerIndex].Buttons[i].IsDown != currentInputBuffer->ControllerInput[controllerIndex].Buttons[i].IsDown)
+      {
+         currentInputBuffer->ControllerInput[controllerIndex].Buttons[i].HalfTransitions = 1;
+      }
+      else
+      {
+         currentInputBuffer->ControllerInput[controllerIndex].Buttons[i].HalfTransitions = 0;
+      }
+   }
+
+   float LeftStickXNormalized = 0.0;
+   float LeftStickYNormalized = 0.0;
+
+   Win32NormalizeStick(gamepad->sThumbLX, gamepad->sThumbLY, &LeftStickXNormalized, &LeftStickYNormalized, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+   currentInputBuffer->ControllerInput[0].LeftStick.EndX =
+       currentInputBuffer->ControllerInput[0].LeftStick.StartX =
+           currentInputBuffer->ControllerInput[0].LeftStick.MinX =
+               currentInputBuffer->ControllerInput[0].LeftStick.MaxX = LeftStickXNormalized;
+
+   currentInputBuffer->ControllerInput[controllerIndex].LeftStick.EndY =
+       currentInputBuffer->ControllerInput[controllerIndex].LeftStick.StartY =
+           currentInputBuffer->ControllerInput[controllerIndex].LeftStick.MinY =
+               currentInputBuffer->ControllerInput[controllerIndex].LeftStick.MaxY = LeftStickYNormalized;
+
+   float RightStickXNormalized = 0.0;
+   float RightStickYNormalized = 0.0;
+   Win32NormalizeStick(gamepad->sThumbRX, gamepad->sThumbRY, &RightStickXNormalized, &RightStickYNormalized, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+
+   currentInputBuffer->ControllerInput[controllerIndex].RightStick.EndX =
+       currentInputBuffer->ControllerInput[controllerIndex].RightStick.StartX =
+           currentInputBuffer->ControllerInput[controllerIndex].RightStick.MinX =
+               currentInputBuffer->ControllerInput[controllerIndex].RightStick.MaxX = RightStickXNormalized;
+
+   currentInputBuffer->ControllerInput[0].RightStick.EndY =
+       currentInputBuffer->ControllerInput[0].RightStick.StartY =
+           currentInputBuffer->ControllerInput[0].RightStick.MinY =
+               currentInputBuffer->ControllerInput[0].RightStick.MaxY = RightStickYNormalized;
+
+   float LeftTriggerNormalized = 0;
+   float RightTriggerNormalized = 0;
+   Win32NormalizeTrigger(gamepad->bLeftTrigger, &LeftTriggerNormalized, XINPUT_GAMEPAD_TRIGGER_THRESHOLD);
+   Win32NormalizeTrigger(gamepad->bRightTrigger, &RightTriggerNormalized, XINPUT_GAMEPAD_TRIGGER_THRESHOLD);
+
+   currentInputBuffer->ControllerInput[controllerIndex].RightTrigger = RightTriggerNormalized;
+   currentInputBuffer->ControllerInput[controllerIndex].LeftTrigger = LeftTriggerNormalized;
 }
 
 internal void Win32ClearSoundBuffer(Win32SoundOuput *soundOutput)
@@ -407,10 +583,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
    performanceCounterFrequency = performanceCounterFrequency;
 
    Win32LoadXInput();
-   
-   
-   GameClocks gameClocks = {};
 
+   GameClocks gameClocks = {};
 
    GameInputBuffer inputBuffer1 = {};
    GameInputBuffer inputBuffer2 = {};
@@ -449,7 +623,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
          ShowWindow(window, showCode);
          UpdateWindow(window);
 
-         MSG message;
          Running = true;
 
          LPVOID baseAddress = 0;
@@ -457,13 +630,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
          baseAddress = (LPVOID)TeraBytes(2);
 #endif
          GameMemory gameMemory;
-         gameMemory.PermanentStorageSize =   MegaBytes(64);
-         gameMemory.TransientStorageSize =   GigaBytes(4);
+         gameMemory.PermanentStorageSize = MegaBytes(64);
+         gameMemory.TransientStorageSize = GigaBytes(4);
 
          size_t totalMemorySize = gameMemory.PermanentStorageSize + gameMemory.TransientStorageSize;
-         gameMemory.PermanentStorage =       VirtualAlloc(baseAddress,totalMemorySize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+         gameMemory.PermanentStorage = VirtualAlloc(baseAddress, totalMemorySize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
          gameMemory.TransientStorage = (uint8_t *)gameMemory.PermanentStorage + gameMemory.PermanentStorageSize;
-         
+
          gameMemory.IsInitialized = false;
 
          //sound test
@@ -483,106 +656,18 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
          soundOutputBuffer.SamplesPerSecond = win32SoundOutput.SamplesPerSecond;
          win32SoundOutput.SoundBuffer->Play(0, 0, DSBPLAY_LOOPING);
 
-         if(!soundOutputBuffer.SampleBuffer || !gameMemory.PermanentStorage || !gameMemory.TransientStorage)
+         if (!soundOutputBuffer.SampleBuffer || !gameMemory.PermanentStorage || !gameMemory.TransientStorage)
          {
             return -1;
          }
-
 
          LARGE_INTEGER lastCounter;
          QueryPerformanceCounter(&lastCounter);
          uint64_t lastCycleCount = __rdtsc();
          while (Running)
          {
-
-            while (PeekMessage(&message, window, 0, 0, PM_REMOVE))
-            {
-               if (message.message == WM_QUIT)
-               {
-                  Running = false;
-               }
-               else if(message.message == WM_SYSKEYDOWN ||
-                        message.message == WM_SYSKEYUP  ||
-                        message.message == WM_KEYDOWN   ||
-                        message.message == WM_KEYUP)
-               {
-                 LPARAM lParam = message.lParam;
-                  WPARAM wParam = message.wParam;
-                  uint32_t VKCode = (uint32_t)wParam;
-                  bool wasDown = ((lParam & (1 << 30)) != 0);
-                  bool isDown = ((lParam & (1 << 31)) == 0);
-                  if (isDown != wasDown)
-                  {
-                     if (VKCode == VK_UP)
-                     {
-                        currentInputBuffer->ControllerInput[0].UpButton.IsDown = isDown;
-                        currentInputBuffer->ControllerInput[0].UpButton.HalfTransitions = (isDown == wasDown)?0:1;
-                     }
-                     
-                     else if (VKCode == VK_DOWN)
-                     {
-                        currentInputBuffer->ControllerInput[0].DownButton.IsDown = isDown;
-                        currentInputBuffer->ControllerInput[0].DownButton.HalfTransitions = (isDown == wasDown)?0:1;
-                     }
-                     else if (VKCode == VK_LEFT)
-                     {
-                        currentInputBuffer->ControllerInput[0].LeftButton.IsDown = isDown;
-                        currentInputBuffer->ControllerInput[0].LeftButton.HalfTransitions = (isDown == wasDown)?0:1;
-                     }
-                     else if (VKCode == VK_RIGHT)
-                     {
-                        currentInputBuffer->ControllerInput[0].RightButton.IsDown = isDown;
-                        currentInputBuffer->ControllerInput[0].RightButton.HalfTransitions = (isDown == wasDown)?0:1;
-                     }
-                     else if (VKCode == VK_ESCAPE)
-                     {
-                     }
-                     else if (VKCode == VK_SPACE)
-                     {
-                     }
-                     else if (VKCode == 'W')
-                     {
-                        currentInputBuffer->ControllerInput[0].UpButton.IsDown = isDown;
-                        currentInputBuffer->ControllerInput[0].UpButton.HalfTransitions = (isDown == wasDown)?0:1;
-                     }
-                     else if (VKCode == 'A')
-                     {
-                        currentInputBuffer->ControllerInput[0].LeftButton.IsDown = isDown;
-                        currentInputBuffer->ControllerInput[0].LeftButton.HalfTransitions = (isDown == wasDown)?0:1;
-
-                     }
-                     else if (VKCode == 'S')
-                     {
-                        currentInputBuffer->ControllerInput[0].DownButton.IsDown = isDown;
-                        currentInputBuffer->ControllerInput[0].DownButton.HalfTransitions = (isDown == wasDown)?0:1;
-
-                     }
-                     else if (VKCode == 'D')
-                     {
-                        currentInputBuffer->ControllerInput[0].RightButton.IsDown = isDown;
-                        currentInputBuffer->ControllerInput[0].RightButton.HalfTransitions = (isDown == wasDown)?0:1;
-
-                     }
-                     else if (VKCode == 'Q')
-                     {
-                        Running = false;
-                     }
-                     else if (VKCode == 'E')
-                     {
-                     }
-                     else if (VKCode == VK_F4 && ((lParam & (1 << 29)) != 0))
-                     {
-                        Running = false;
-                     }
-                  }
-               }
-               else
-               {
-                  TranslateMessage(&message);
-                  DispatchMessage(&message);
-               }
-            }
-            
+            //win32 only needs current since we're going to get teh transition information from windows...
+            Win32ProcessWindowMessages(window, currentInputBuffer);
             //game input, do we need more frequent polls
             for (int controllerIndex = 0; controllerIndex < XUSER_MAX_COUNT; ++controllerIndex)
             {
@@ -591,112 +676,16 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                currentInputBuffer->ControllerInput[controllerIndex].Connected = false;
                if (XInputGetState(controllerIndex, &state) == ERROR_SUCCESS)
                {
-                  XINPUT_GAMEPAD *pad = &state.Gamepad;
-                  currentInputBuffer->ControllerInput[controllerIndex].Connected = true;
-                  //this scan order works becasue platform and game are aligned in windows, don't make the same assumption in other
-                  //platforms
-                  for(int i = 0; i < ArrayCount(Win32GamepadButtonScanOrder); ++i)
-                  {
-                     
-                     currentInputBuffer->ControllerInput[controllerIndex].Buttons[i].IsDown = (pad->wButtons & Win32GamepadButtonScanOrder[i]) > 0;
-                     if(lastInputBuffer->ControllerInput[controllerIndex].Buttons[i].IsDown != currentInputBuffer->ControllerInput[controllerIndex].Buttons[i].IsDown)
-                     {
-                        currentInputBuffer->ControllerInput[controllerIndex].Buttons[i].HalfTransitions = 1;
-                     }
-                     else
-                     {
-                        currentInputBuffer->ControllerInput[controllerIndex].Buttons[i].HalfTransitions = 0;
-                     }
-                  }
-
-                  int16_t LeftStickX = pad->sThumbLX;
-                  int16_t LeftStickY = pad->sThumbLY;
-                  int16_t RightStickX = pad->sThumbRX;
-                  int16_t RightStickY = pad->sThumbRY;
-                  uint8_t RightTrigger = pad->bRightTrigger;
-                  uint8_t LeftTrigger = pad->bLeftTrigger;
-
-                  float LeftStickXNormalized = 0.0;
-                  float LeftStickYNormalized = 0.0;
-                  if (LeftStickX >= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
-                  {
-                     LeftStickXNormalized = (float)LeftStickX / (float)INT16_MAX;
-                  }
-                  if (LeftStickX <= -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
-                  {
-                     LeftStickXNormalized = -1.f * (float)LeftStickX / (float)INT16_MIN;
-                  }
-                  currentInputBuffer->ControllerInput[0].LeftStick.EndX = 
-                  currentInputBuffer->ControllerInput[0].LeftStick.StartX = 
-                  currentInputBuffer->ControllerInput[0].LeftStick.MinX = 
-                  currentInputBuffer->ControllerInput[0].LeftStick.MaxX = 
-                  LeftStickXNormalized;
-
-                  if (LeftStickY >= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
-                  {
-                     LeftStickYNormalized = (float)LeftStickY / (float)INT16_MAX;
-                  }
-                  if (LeftStickY <= -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
-                  {
-                     LeftStickYNormalized = -1.f * (float)LeftStickY / (float)INT16_MIN;
-                  }
-                  currentInputBuffer->ControllerInput[controllerIndex].LeftStick.EndY = 
-                  currentInputBuffer->ControllerInput[controllerIndex].LeftStick.StartY = 
-                  currentInputBuffer->ControllerInput[controllerIndex].LeftStick.MinY = 
-                  currentInputBuffer->ControllerInput[controllerIndex].LeftStick.MaxY = LeftStickYNormalized;
-
-                  float RightStickXNormalized = 0.0;
-                  float RightStickYNormalized = 0.0;
-                  if (RightStickX >= XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE)
-                  {
-                     RightStickXNormalized = (float)RightStickX / (float)INT16_MAX;
-                  }
-                  if (RightStickX <= -XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE)
-                  {
-                     RightStickXNormalized = -1.f * (float)RightStickX / (float)INT16_MIN;
-                  }
-                  currentInputBuffer->ControllerInput[controllerIndex].RightStick.EndX = 
-                  currentInputBuffer->ControllerInput[controllerIndex].RightStick.StartX = 
-                  currentInputBuffer->ControllerInput[controllerIndex].RightStick.MinX = 
-                  currentInputBuffer->ControllerInput[controllerIndex].RightStick.MaxX = RightStickXNormalized;
-
-                  if (RightStickY >= XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE)
-                  {
-                     RightStickYNormalized = (float)RightStickY / (float)INT16_MAX;
-                  }
-                  if (RightStickY <= -XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE)
-                  {
-                     RightStickYNormalized = -1.f * (float)RightStickY / (float)INT16_MIN;
-                  }
-                  currentInputBuffer->ControllerInput[0].RightStick.EndY = 
-                  currentInputBuffer->ControllerInput[0].RightStick.StartY = 
-                  currentInputBuffer->ControllerInput[0].RightStick.MinY = 
-                  currentInputBuffer->ControllerInput[0].RightStick.MaxY = RightStickYNormalized;
-
-                  float LeftTriggerNormalized = 0;
-                  float RightTriggerNormalized = 0;
-
-                  if (LeftTrigger >= XINPUT_GAMEPAD_TRIGGER_THRESHOLD)
-                  {
-                     LeftTriggerNormalized = (float)LeftTrigger / 255.f;
-                  }
-
-                  if (RightTrigger >= XINPUT_GAMEPAD_TRIGGER_THRESHOLD)
-                  {
-                     RightTriggerNormalized = (float)RightTrigger / 255.f;
-                  }
-
-                  currentInputBuffer->ControllerInput[controllerIndex].RightTrigger = RightTriggerNormalized;
-                  currentInputBuffer->ControllerInput[controllerIndex].LeftTrigger = LeftTriggerNormalized;
+                  Win32ProcessGamepadInput(&state.Gamepad, controllerIndex, currentInputBuffer, lastInputBuffer);
                }
             }
 
             bool soundWasValid = false;
             //Note:Direct sound output test
             DWORD playCursor = 0;
-            DWORD writeCursor=0; 
-            DWORD bytesToWrite=0; 
-            DWORD byteToLock=0;
+            DWORD writeCursor = 0;
+            DWORD bytesToWrite = 0;
+            DWORD byteToLock = 0;
             if (SUCCEEDED(win32SoundOutput.SoundBuffer->GetCurrentPosition(&playCursor, &writeCursor)))
             {
                bytesToWrite = 0;
@@ -738,7 +727,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             QueryPerformanceCounter(&endCounter);
             uint64_t endCycleCount = __rdtsc();
             local_persist int printy = 0;
-            #if 0
+#if 0
             if (0 && (printy++ % 60) == 0)
             {
                int64_t counterElapsed = endCounter.QuadPart - lastCounter.QuadPart;
@@ -750,7 +739,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                snprintf(counterReport, sizeof(counterReport), "Frame Information: %0.2fmc/f   %0.2fms/f   %lldfps\n", mcpf, msElapsed, fps);
                OutputDebugStringA(counterReport);
             }
-            #endif
+#endif
             lastCycleCount = endCycleCount;
             lastCounter.QuadPart = endCounter.QuadPart;
          }
@@ -759,4 +748,3 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
    return 0; //useless
 }
-
