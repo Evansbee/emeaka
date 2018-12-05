@@ -1,2 +1,4 @@
 @echo off
-call bin\win32_emeaka.exe
+pushd res
+call ..\bin\win32_emeaka.exe
+popd

@@ -38,15 +38,23 @@ internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, int toneHz)
   }
 }
 
-internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer *inputBuffer)
+internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
 {
+  Assert(sizeof(GameState) <= gameMemory->PermanentStorageSize);
 
   GameState *gameState = (GameState *)gameMemory->PermanentStorage;
   if (!gameMemory->IsInitialized)
   {
+    char *filename = "test.png";
+    DebugFileResult fileReadResult = PlatformReadEntireFile(filename);
+    if(fileReadResult.Contents)
+    {
+      PlatformWriteEntireFile("test2.png", fileReadResult.FileSize, fileReadResult.Contents);
+      PlatformFreeFileMemory(fileReadResult.Contents);
+    }
+
     gameState->ToneHz = 261;
-    gameState->BlueOffset = 0;
-    gameState->GreenOffset = 0;
+    //why is this a bad idea?
     gameMemory->IsInitialized = true;
   }
 

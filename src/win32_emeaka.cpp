@@ -179,6 +179,81 @@ internal void Win32InitDSound(HWND window, Win32SoundOuput *soundOutput)
 }
 //end dsound
 
+
+internal DebugFileResult PlatformReadEntireFile(char *filename)
+{
+   HANDLE fileHandle = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+   DebugFileResult fileReadResult = {};
+
+   if(fileHandle != INVALID_HANDLE_VALUE)
+   {
+      LARGE_INTEGER fileSize;
+      if(GetFileSizeEx(fileHandle, &fileSize))
+      {
+         DWORD bytesRead;
+         fileReadResult.Contents = VirtualAlloc(0,fileSize.QuadPart,MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+         if(fileReadResult.Contents)
+         {
+            Assert(fileSize.QuadPart <= 0xFFFFFFFF);
+            uint32_t fileSize32 = (uint32_t)fileSize.QuadPart;
+            if(ReadFile(fileHandle, fileReadResult.Contents, fileSize32, &bytesRead, 0) && bytesRead == fileSize32)
+            {
+               fileReadResult.FileSize = bytesRead;
+
+            }
+            else
+            {
+               PlatformFreeFileMemory(fileReadResult.Contents);
+            }
+         }
+         else
+         {
+
+         }
+      }
+      else
+      {
+
+      }
+      CloseHandle(fileHandle);
+   }
+   return fileReadResult;
+}
+
+internal void PlatformFreeFileMemory(void *memory)
+{
+   if(memory)
+   {
+      VirtualFree(memory,0,MEM_RELEASE);
+   }
+
+}
+internal bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *memory)
+{
+   HANDLE fileHandle = CreateFileA(filename, GENERIC_WRITE, 0, 0, CREATE_NEW, 0, 0);
+   if(fileHandle != INVALID_HANDLE_VALUE)
+   {
+      DWORD bytesWritten;
+      if(WriteFile(fileHandle, memory, memorySize, &bytesWritten, 0) && bytesWritten == memorySize)
+      {
+         CloseHandle(fileHandle);
+         return true;
+      }
+      else
+      {
+         CloseHandle(fileHandle);
+         return false;
+      }
+   }
+   else
+   {
+      return false;
+   }
+   return false;
+}
+
+
+
 internal Win32WindowDimensions GetWin32WindowDimensions(HWND window)
 {
    RECT clientRect;
@@ -391,6 +466,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
    int64_t performanceCounterFrequency = frequency.QuadPart;
 
    Win32LoadXInput();
+   
+   
+   GameClocks gameClocks = {};
+
 
    GameInputBuffer inputBuffer1 = {};
    GameInputBuffer inputBuffer2 = {};
@@ -432,9 +511,18 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
          MSG message;
          Running = true;
 
+         LPVOID baseAddress = 0;
+#if EMEAKA_INTERNAL
+         baseAddress = (LPVOID)TeraBytes(2);
+#endif
          GameMemory gameMemory;
-         gameMemory.PermanentStorage = VirtualAlloc(0,sizeof(GameState),MEM_COMMIT, PAGE_READWRITE);
-         gameMemory.PermanentStorageSize = sizeof(GameState);
+         gameMemory.PermanentStorageSize =   MegaBytes(64);
+         gameMemory.TransientStorageSize =   GigaBytes(4);
+
+         size_t totalMemorySize = gameMemory.PermanentStorageSize + gameMemory.TransientStorageSize;
+         gameMemory.PermanentStorage =       VirtualAlloc(baseAddress,totalMemorySize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+         gameMemory.TransientStorage = (uint8_t *)gameMemory.PermanentStorage + gameMemory.PermanentStorageSize;
+         
          gameMemory.IsInitialized = false;
 
          //sound test
@@ -450,10 +538,15 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
          Win32ClearSoundBuffer(&win32SoundOutput);
 
          GameSoundBuffer soundOutputBuffer = {};
-         soundOutputBuffer.SampleBuffer = (int16_t *)VirtualAlloc(0, win32SoundOutput.BufferSize, MEM_COMMIT, PAGE_READWRITE);
+         soundOutputBuffer.SampleBuffer = (int16_t *)VirtualAlloc(0, win32SoundOutput.BufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
          soundOutputBuffer.SamplesPerSecond = win32SoundOutput.SamplesPerSecond;
-
          win32SoundOutput.SoundBuffer->Play(0, 0, DSBPLAY_LOOPING);
+
+         if(!soundOutputBuffer.SampleBuffer || !gameMemory.PermanentStorage || !gameMemory.TransientStorage)
+         {
+            return -1;
+         }
+
 
          LARGE_INTEGER lastCounter;
          QueryPerformanceCounter(&lastCounter);
@@ -601,7 +694,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
             soundOutputBuffer.SampleCount = bytesToWrite / win32SoundOutput.BytesPerSample;
 
-            GameUpdateAndRender(&gameMemory, (GameOffscreenBuffer *)(&OffscreenBuffer), &soundOutputBuffer, currentInputBuffer);
+            GameUpdateAndRender(&gameMemory, (GameOffscreenBuffer *)(&OffscreenBuffer), &soundOutputBuffer, currentInputBuffer, &gameClocks);
 
             //swap buffers
             GameInputBuffer *tempInputBuffer = currentInputBuffer;
@@ -642,3 +735,4 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
    return 0; //useless
 }
+
