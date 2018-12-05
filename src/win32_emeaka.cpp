@@ -296,6 +296,7 @@ internal void Win32DisplayBufferInWindow(HDC deviceContext, int windowWidth, int
        DIB_RGB_COLORS,
        SRCCOPY);
 }
+
 internal void Win32ProcessWindowMessages(HWND window, GameInputBuffer *inputBuffer)
 {
    MSG message;
@@ -319,57 +320,39 @@ internal void Win32ProcessWindowMessages(HWND window, GameInputBuffer *inputBuff
          {
             if (VKCode == VK_UP)
             {
-               inputBuffer->ControllerInput[0].UpButton.IsDown = isDown;
-               inputBuffer->ControllerInput[0].UpButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
-            }
-
+               inputBuffer->KeyboardInput.UpArrow.IsDown = isDown;
+               inputBuffer->KeyboardInput.UpArrow.HalfTransitions = (isDown == wasDown) ? 0 : 1;
+            } 
             else if (VKCode == VK_DOWN)
             {
-               inputBuffer->ControllerInput[0].DownButton.IsDown = isDown;
-               inputBuffer->ControllerInput[0].DownButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
-            }
+               inputBuffer->KeyboardInput.DownArrow.IsDown = isDown;
+               inputBuffer->KeyboardInput.DownArrow.HalfTransitions = 1;
+            } 
             else if (VKCode == VK_LEFT)
             {
-               inputBuffer->ControllerInput[0].LeftButton.IsDown = isDown;
-               inputBuffer->ControllerInput[0].LeftButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
+               inputBuffer->KeyboardInput.LeftArrow.IsDown = isDown;
+               inputBuffer->KeyboardInput.LeftArrow.HalfTransitions = 1;
             }
             else if (VKCode == VK_RIGHT)
             {
-               inputBuffer->ControllerInput[0].RightButton.IsDown = isDown;
-               inputBuffer->ControllerInput[0].RightButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
+               inputBuffer->KeyboardInput.RightArrow.IsDown = isDown;
+               inputBuffer->KeyboardInput.RightArrow.HalfTransitions = 1;
             }
             else if (VKCode == VK_ESCAPE)
             {
+               inputBuffer->KeyboardInput.EscapeButton.IsDown = isDown;
+               inputBuffer->KeyboardInput.EscapeButton.HalfTransitions = 1;
             }
             else if (VKCode == VK_SPACE)
             {
+               inputBuffer->KeyboardInput.Key[' '].IsDown = isDown;
+               inputBuffer->KeyboardInput.Key[' '].HalfTransitions = 1;
             }
-            else if (VKCode == 'W')
+            else if (VKCode >= 'A' && VKCode <= 'Z' || 
+                     VKCode >= '0' && VKCode <= '9')
             {
-               inputBuffer->ControllerInput[0].UpButton.IsDown = isDown;
-               inputBuffer->ControllerInput[0].UpButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
-            }
-            else if (VKCode == 'A')
-            {
-               inputBuffer->ControllerInput[0].LeftButton.IsDown = isDown;
-               inputBuffer->ControllerInput[0].LeftButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
-            }
-            else if (VKCode == 'S')
-            {
-               inputBuffer->ControllerInput[0].DownButton.IsDown = isDown;
-               inputBuffer->ControllerInput[0].DownButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
-            }
-            else if (VKCode == 'D')
-            {
-               inputBuffer->ControllerInput[0].RightButton.IsDown = isDown;
-               inputBuffer->ControllerInput[0].RightButton.HalfTransitions = (isDown == wasDown) ? 0 : 1;
-            }
-            else if (VKCode == 'Q')
-            {
-               Running = false;
-            }
-            else if (VKCode == 'E')
-            {
+               inputBuffer->KeyboardInput.Key[VKCode].IsDown = isDown;
+               inputBuffer->KeyboardInput.Key[VKCode].HalfTransitions = 1;
             }
             else if (VKCode == VK_F4 && ((lParam & (1 << 29)) != 0))
             {
@@ -486,36 +469,22 @@ internal void Win32ProcessGamepadInput(XINPUT_GAMEPAD *gamepad, size_t controlle
       }
    }
 
-   float LeftStickXNormalized = 0.0;
-   float LeftStickYNormalized = 0.0;
+   float LeftStickXNormalized = 0.f;
+   float LeftStickYNormalized = 0.f;
 
    Win32NormalizeStick(gamepad->sThumbLX, gamepad->sThumbLY, &LeftStickXNormalized, &LeftStickYNormalized, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-   currentInputBuffer->ControllerInput[0].LeftStick.EndX =
-       currentInputBuffer->ControllerInput[0].LeftStick.StartX =
-           currentInputBuffer->ControllerInput[0].LeftStick.MinX =
-               currentInputBuffer->ControllerInput[0].LeftStick.MaxX = LeftStickXNormalized;
+   currentInputBuffer->ControllerInput[controllerIndex].LeftStick.AverageX = LeftStickXNormalized;
+   currentInputBuffer->ControllerInput[controllerIndex].LeftStick.AverageY = LeftStickYNormalized;
 
-   currentInputBuffer->ControllerInput[controllerIndex].LeftStick.EndY =
-       currentInputBuffer->ControllerInput[controllerIndex].LeftStick.StartY =
-           currentInputBuffer->ControllerInput[controllerIndex].LeftStick.MinY =
-               currentInputBuffer->ControllerInput[controllerIndex].LeftStick.MaxY = LeftStickYNormalized;
-
-   float RightStickXNormalized = 0.0;
-   float RightStickYNormalized = 0.0;
+   float RightStickXNormalized = 0.f;
+   float RightStickYNormalized = 0.f;
    Win32NormalizeStick(gamepad->sThumbRX, gamepad->sThumbRY, &RightStickXNormalized, &RightStickYNormalized, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
 
-   currentInputBuffer->ControllerInput[controllerIndex].RightStick.EndX =
-       currentInputBuffer->ControllerInput[controllerIndex].RightStick.StartX =
-           currentInputBuffer->ControllerInput[controllerIndex].RightStick.MinX =
-               currentInputBuffer->ControllerInput[controllerIndex].RightStick.MaxX = RightStickXNormalized;
+   currentInputBuffer->ControllerInput[controllerIndex].RightStick.AverageX = RightStickXNormalized;
+   currentInputBuffer->ControllerInput[controllerIndex].RightStick.AverageY = RightStickYNormalized;
 
-   currentInputBuffer->ControllerInput[0].RightStick.EndY =
-       currentInputBuffer->ControllerInput[0].RightStick.StartY =
-           currentInputBuffer->ControllerInput[0].RightStick.MinY =
-               currentInputBuffer->ControllerInput[0].RightStick.MaxY = RightStickYNormalized;
-
-   float LeftTriggerNormalized = 0;
-   float RightTriggerNormalized = 0;
+   float LeftTriggerNormalized = 0.f;
+   float RightTriggerNormalized = 0.f;
    Win32NormalizeTrigger(gamepad->bLeftTrigger, &LeftTriggerNormalized, XINPUT_GAMEPAD_TRIGGER_THRESHOLD);
    Win32NormalizeTrigger(gamepad->bRightTrigger, &RightTriggerNormalized, XINPUT_GAMEPAD_TRIGGER_THRESHOLD);
 
@@ -523,6 +492,32 @@ internal void Win32ProcessGamepadInput(XINPUT_GAMEPAD *gamepad, size_t controlle
    currentInputBuffer->ControllerInput[controllerIndex].LeftTrigger = LeftTriggerNormalized;
 }
 
+internal void
+Win32PrepareInputBuffers(GameInputBuffer *currentInputBuffer, GameInputBuffer *lastInputBuffer)
+{
+  ZeroMemory(currentInputBuffer, sizeof(GameInputBuffer));
+  currentInputBuffer->KeyboardInput.ShiftButton.IsDown = lastInputBuffer->KeyboardInput.ShiftButton.IsDown;
+  currentInputBuffer->KeyboardInput.AltButton.IsDown = lastInputBuffer->KeyboardInput.AltButton.IsDown;
+  currentInputBuffer->KeyboardInput.EscapeButton.IsDown = lastInputBuffer->KeyboardInput.EscapeButton.IsDown;
+  currentInputBuffer->KeyboardInput.UpArrow.IsDown = lastInputBuffer->KeyboardInput.UpArrow.IsDown;
+  currentInputBuffer->KeyboardInput.DownArrow.IsDown = lastInputBuffer->KeyboardInput.DownArrow.IsDown;
+  currentInputBuffer->KeyboardInput.RightArrow.IsDown = lastInputBuffer->KeyboardInput.RightArrow.IsDown;
+  currentInputBuffer->KeyboardInput.LeftArrow.IsDown = lastInputBuffer->KeyboardInput.LeftArrow.IsDown;
+  currentInputBuffer->KeyboardInput.CtrlButton.IsDown = lastInputBuffer->KeyboardInput.CtrlButton.IsDown;
+  for(int i = 0; i < 255; ++i)
+  {
+     currentInputBuffer->KeyboardInput.Key[i].IsDown = lastInputBuffer->KeyboardInput.Key[i].IsDown;
+  }
+  for(int i = 0; i < 12; ++i)
+  {
+     currentInputBuffer->KeyboardInput.FKey[i].IsDown = lastInputBuffer->KeyboardInput.FKey[i].IsDown;
+  }
+
+  currentInputBuffer->MouseInput.MouseInWindow = lastInputBuffer->MouseInput.MouseInWindow;
+  currentInputBuffer->MouseInput.MouseLocationX = lastInputBuffer->MouseInput.MouseLocationX;
+  currentInputBuffer->MouseInput.MouseLocationY = lastInputBuffer->MouseInput.MouseLocationY;
+
+}
 internal void Win32ClearSoundBuffer(Win32SoundOuput *soundOutput)
 {
    int32_t *soundBuffer1;
@@ -667,15 +662,17 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
          while (Running)
          {
             //win32 only needs current since we're going to get teh transition information from windows...
+
+            Win32PrepareInputBuffers(currentInputBuffer, lastInputBuffer);
             Win32ProcessWindowMessages(window, currentInputBuffer);
             //game input, do we need more frequent polls
             for (int controllerIndex = 0; controllerIndex < XUSER_MAX_COUNT; ++controllerIndex)
             {
                XINPUT_STATE state;
                ZeroMemory(&state, sizeof(XINPUT_STATE));
-               currentInputBuffer->ControllerInput[controllerIndex].Connected = false;
                if (XInputGetState(controllerIndex, &state) == ERROR_SUCCESS)
                {
+                  currentInputBuffer->ControllerInput[controllerIndex].Connected = true;
                   Win32ProcessGamepadInput(&state.Gamepad, controllerIndex, currentInputBuffer, lastInputBuffer);
                }
             }
@@ -707,6 +704,16 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
             GameUpdateAndRender(&gameMemory, (GameOffscreenBuffer *)(&OffscreenBuffer), &soundOutputBuffer, currentInputBuffer, &gameClocks);
 
+            for (int controllerIndex = 0; controllerIndex < XUSER_MAX_COUNT; ++controllerIndex)
+            {
+               if(currentInputBuffer->ControllerInput[controllerIndex].Connected)
+               {
+                  XINPUT_VIBRATION vibration = {};
+                  vibration.wLeftMotorSpeed = (WORD)currentInputBuffer->ControllerInput[controllerIndex].LeftVibration;
+                  vibration.wRightMotorSpeed = (WORD)currentInputBuffer->ControllerInput[controllerIndex].RightVibration;
+                  XInputSetState(controllerIndex, &vibration);
+               }
+            }
             //swap buffers
             GameInputBuffer *tempInputBuffer = currentInputBuffer;
             currentInputBuffer = lastInputBuffer;

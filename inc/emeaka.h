@@ -51,14 +51,8 @@ struct GameButtonState
 
 struct GameAnalogStickState
 {
-  float StartX;
-  float StartY;
-  float MinX;
-  float MinY;
-  float MaxX;
-  float MaxY;
-  float EndX;
-  float EndY;
+  float AverageX;
+  float AverageY;
 };
 
 struct GameControllerInput
@@ -90,14 +84,23 @@ struct GameControllerInput
 
   float RightTrigger;
   float LeftTrigger;
+
+  uint16_t LeftVibration;
+  uint16_t RightVibration;
 };
 
 struct GameKeyboardInput
 {
   GameButtonState ShiftButton;
   GameButtonState AltButton;
+  GameButtonState EscapeButton;
+  GameButtonState UpArrow;
+  GameButtonState DownArrow;
+  GameButtonState RightArrow;
+  GameButtonState LeftArrow;
   GameButtonState CtrlButton;
   GameButtonState Key[255];
+  GameButtonState FKey[12];
 };
 
 struct GameMouseInput
@@ -138,11 +141,16 @@ struct GameMemory
 };
 
 
-
 struct GameClocks
 {
   float SecondsElapsed;
 };
+
+struct GameControl 
+{
+  bool Running;
+};
+
 //Services platform layer provides to game
 //who knows..
 #if EMEAKA_INTERNAL

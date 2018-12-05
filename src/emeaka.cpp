@@ -58,9 +58,16 @@ internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *o
     gameMemory->IsInitialized = true;
   }
 
-  gameState->BlueOffset += int(5.f * inputBuffer->ControllerInput[0].LeftStick.EndX);
-  gameState->GreenOffset -= int(5.f * inputBuffer->ControllerInput[0].LeftStick.EndY);
-  gameState->ToneHz = int(512.f + inputBuffer->ControllerInput[0].RightStick.EndY * 256.f);
+  gameState->BlueOffset += int(5.f * inputBuffer->ControllerInput[0].LeftStick.AverageX);
+  gameState->GreenOffset -= int(5.f * inputBuffer->ControllerInput[0].LeftStick.AverageY);
+  gameState->ToneHz = int(512.f + inputBuffer->ControllerInput[0].RightStick.AverageY * 256.f);
+
+  if(inputBuffer->KeyboardInput.Key['A'].IsDown)
+  {
+    inputBuffer->ControllerInput[0].LeftVibration = 65535;
+    gameState->ToneHz = 100;
+  }
+
   TempRenderWeirdGradient(offscreenBuffer, gameState->BlueOffset, gameState->GreenOffset);
   TempComposeSineWave(soundBuffer, gameState->ToneHz);
   //Todo: make this more complicated
