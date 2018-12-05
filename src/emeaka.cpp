@@ -40,7 +40,7 @@ internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, int toneHz)
 
 internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
 {
-  Assert(sizeof(GameState) <= gameMemory->PermanentStorageSize);
+  Assert(sizeof(GameState) <= gameMemory->PermanentStorageSize, "Permanent Storage Inadequate");
 
   GameState *gameState = (GameState *)gameMemory->PermanentStorage;
   if (!gameMemory->IsInitialized)
@@ -58,8 +58,8 @@ internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *o
     gameMemory->IsInitialized = true;
   }
 
-  gameState->BlueOffset += 5.f * inputBuffer->ControllerInput[0].LeftStick.EndX;
-  gameState->GreenOffset -= 5.f * inputBuffer->ControllerInput[0].LeftStick.EndY;
+  gameState->BlueOffset += int(5.f * inputBuffer->ControllerInput[0].LeftStick.EndX);
+  gameState->GreenOffset -= int(5.f * inputBuffer->ControllerInput[0].LeftStick.EndY);
   gameState->ToneHz = int(512.f + inputBuffer->ControllerInput[0].RightStick.EndY * 256.f);
   TempRenderWeirdGradient(offscreenBuffer, gameState->BlueOffset, gameState->GreenOffset);
   TempComposeSineWave(soundBuffer, gameState->ToneHz);

@@ -124,7 +124,7 @@ internal void Win32InitDSound(HWND window, Win32SoundOuput *soundOutput)
       {
          WAVEFORMATEX waveFormat = {};
          waveFormat.wFormatTag = WAVE_FORMAT_PCM;
-         waveFormat.nChannels = soundOutput->Channels;
+         waveFormat.nChannels = (WORD)soundOutput->Channels;
          waveFormat.wBitsPerSample = 16;
          waveFormat.nSamplesPerSec = soundOutput->SamplesPerSecond;
          waveFormat.nBlockAlign = waveFormat.nChannels * waveFormat.wBitsPerSample / 8;
@@ -194,7 +194,7 @@ internal DebugFileResult PlatformReadEntireFile(char *filename)
          fileReadResult.Contents = VirtualAlloc(0,fileSize.QuadPart,MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
          if(fileReadResult.Contents)
          {
-            Assert(fileSize.QuadPart <= 0xFFFFFFFF);
+            Assert(fileSize.QuadPart <= 0xFFFFFFFF, "Only 32Bit Files supported in windows API");
             uint32_t fileSize32 = (uint32_t)fileSize.QuadPart;
             if(ReadFile(fileHandle, fileReadResult.Contents, fileSize32, &bytesRead, 0) && bytesRead == fileSize32)
             {
@@ -233,8 +233,9 @@ internal bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *m
    HANDLE fileHandle = CreateFileA(filename, GENERIC_WRITE, 0, 0, CREATE_NEW, 0, 0);
    if(fileHandle != INVALID_HANDLE_VALUE)
    {
+      Assert(memorySize <= 0xFFFFFFFF, "Windows only supports 32 bit files");
       DWORD bytesWritten;
-      if(WriteFile(fileHandle, memory, memorySize, &bytesWritten, 0) && bytesWritten == memorySize)
+      if(WriteFile(fileHandle, memory, (DWORD)memorySize, &bytesWritten, 0) && bytesWritten == memorySize)
       {
          CloseHandle(fileHandle);
          return true;
@@ -249,7 +250,6 @@ internal bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *m
    {
       return false;
    }
-   return false;
 }
 
 
@@ -312,66 +312,7 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM wPara
    case WM_SYSKEYUP:
    case WM_KEYDOWN:
    case WM_KEYUP:
-   {
-      uint32_t VKCode = wParam;
-      bool wasDown = ((lParam & (1 << 30)) != 0);
-      bool isDown = ((lParam & (1 << 31)) == 0);
-      if (isDown != wasDown)
-      {
-
-         if (VKCode == VK_UP)
-         {
-         }
-         else if (VKCode == VK_DOWN)
-         {
-         }
-         else if (VKCode == VK_LEFT)
-         {
-         }
-         else if (VKCode == VK_RIGHT)
-         {
-         }
-         else if (VKCode == VK_ESCAPE)
-         {
-            OutputDebugStringA("Escape: ");
-            if (isDown)
-            {
-               OutputDebugStringA("IsDown ");
-            }
-            if (wasDown)
-            {
-               OutputDebugStringA("WasDown");
-            }
-            OutputDebugStringA("\n");
-         }
-         else if (VKCode == VK_SPACE)
-         {
-         }
-         else if (VKCode == 'W')
-         {
-         }
-         else if (VKCode == 'A')
-         {
-         }
-         else if (VKCode == 'S')
-         {
-         }
-         else if (VKCode == 'D')
-         {
-         }
-         else if (VKCode == 'Q')
-         {
-            Running = false;
-         }
-         else if (VKCode == 'E')
-         {
-         }
-         else if (VKCode == VK_F4 && ((lParam & (1 << 29)) != 0))
-         {
-            Running = false;
-         }
-      }
-   }
+      Assert(false, "FAILURE")
    break;
 
    case WM_PAINT:
@@ -415,12 +356,12 @@ internal void Win32ClearSoundBuffer(Win32SoundOuput *soundOutput)
 
    if (SUCCEEDED(soundOutput->SoundBuffer->Lock(0, soundOutput->SamplesPerSecond, &(void *)soundBuffer1, &soundBuffer1Size, &(void *)soundBuffer2, &soundBuffer2Size, 0)))
    {
-      for (int i = 0; i < soundBuffer1Size; ++i)
+      for (DWORD i = 0; i < soundBuffer1Size; ++i)
       {
          soundBuffer1[i] = 0;
          soundOutput->RunningSampleIndex++;
       }
-      for (int i = 0; i < soundBuffer2Size; ++i)
+      for (DWORD i = 0; i < soundBuffer2Size; ++i)
       {
          soundBuffer2[i] = 0;
          soundOutput->RunningSampleIndex++;
@@ -435,13 +376,12 @@ internal void Win32FillSoundBuffer(Win32SoundOuput *soundOutput, DWORD byteToLoc
    int32_t *soundBuffer2;
    DWORD soundBuffer1Size;
    DWORD soundBuffer2Size;
-   size_t writeCount = 0;
    if (SUCCEEDED(soundOutput->SoundBuffer->Lock(byteToLock, bytesToWrite, &(void *)soundBuffer1, &soundBuffer1Size, &(void *)soundBuffer2, &soundBuffer2Size, 0)))
    {
       int32_t *srcSample = (int32_t *)sourceBuffer->SampleBuffer;
       DWORD bank1SampleCount = soundBuffer1Size / 4; //) soundOutput->BytesPerSample;
       DWORD bank2SampleCount = soundBuffer2Size / 4; // soundOutput->BytesPerSample;
-      for (int srcSampleIndex = 0; srcSampleIndex < sourceBuffer->SampleCount && srcSampleIndex < bank1SampleCount + bank2SampleCount; srcSampleIndex++)
+      for (DWORD srcSampleIndex = 0; srcSampleIndex < sourceBuffer->SampleCount && srcSampleIndex < bank1SampleCount + bank2SampleCount; srcSampleIndex++)
       {
 
          if (srcSampleIndex < bank1SampleCount)
@@ -464,6 +404,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
    LARGE_INTEGER frequency;
    QueryPerformanceFrequency(&frequency);
    int64_t performanceCounterFrequency = frequency.QuadPart;
+   performanceCounterFrequency = performanceCounterFrequency;
 
    Win32LoadXInput();
    
@@ -560,8 +501,86 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                {
                   Running = false;
                }
-               TranslateMessage(&message);
-               DispatchMessage(&message);
+               else if(message.message == WM_SYSKEYDOWN ||
+                        message.message == WM_SYSKEYUP  ||
+                        message.message == WM_KEYDOWN   ||
+                        message.message == WM_KEYUP)
+               {
+                 LPARAM lParam = message.lParam;
+                  WPARAM wParam = message.wParam;
+                  uint32_t VKCode = (uint32_t)wParam;
+                  bool wasDown = ((lParam & (1 << 30)) != 0);
+                  bool isDown = ((lParam & (1 << 31)) == 0);
+                  if (isDown != wasDown)
+                  {
+                     if (VKCode == VK_UP)
+                     {
+                        currentInputBuffer->ControllerInput[0].UpButton.IsDown = isDown;
+                        currentInputBuffer->ControllerInput[0].UpButton.HalfTransitions = (isDown == wasDown)?0:1;
+                     }
+                     
+                     else if (VKCode == VK_DOWN)
+                     {
+                        currentInputBuffer->ControllerInput[0].DownButton.IsDown = isDown;
+                        currentInputBuffer->ControllerInput[0].DownButton.HalfTransitions = (isDown == wasDown)?0:1;
+                     }
+                     else if (VKCode == VK_LEFT)
+                     {
+                        currentInputBuffer->ControllerInput[0].LeftButton.IsDown = isDown;
+                        currentInputBuffer->ControllerInput[0].LeftButton.HalfTransitions = (isDown == wasDown)?0:1;
+                     }
+                     else if (VKCode == VK_RIGHT)
+                     {
+                        currentInputBuffer->ControllerInput[0].RightButton.IsDown = isDown;
+                        currentInputBuffer->ControllerInput[0].RightButton.HalfTransitions = (isDown == wasDown)?0:1;
+                     }
+                     else if (VKCode == VK_ESCAPE)
+                     {
+                     }
+                     else if (VKCode == VK_SPACE)
+                     {
+                     }
+                     else if (VKCode == 'W')
+                     {
+                        currentInputBuffer->ControllerInput[0].UpButton.IsDown = isDown;
+                        currentInputBuffer->ControllerInput[0].UpButton.HalfTransitions = (isDown == wasDown)?0:1;
+                     }
+                     else if (VKCode == 'A')
+                     {
+                        currentInputBuffer->ControllerInput[0].LeftButton.IsDown = isDown;
+                        currentInputBuffer->ControllerInput[0].LeftButton.HalfTransitions = (isDown == wasDown)?0:1;
+
+                     }
+                     else if (VKCode == 'S')
+                     {
+                        currentInputBuffer->ControllerInput[0].DownButton.IsDown = isDown;
+                        currentInputBuffer->ControllerInput[0].DownButton.HalfTransitions = (isDown == wasDown)?0:1;
+
+                     }
+                     else if (VKCode == 'D')
+                     {
+                        currentInputBuffer->ControllerInput[0].RightButton.IsDown = isDown;
+                        currentInputBuffer->ControllerInput[0].RightButton.HalfTransitions = (isDown == wasDown)?0:1;
+
+                     }
+                     else if (VKCode == 'Q')
+                     {
+                        Running = false;
+                     }
+                     else if (VKCode == 'E')
+                     {
+                     }
+                     else if (VKCode == VK_F4 && ((lParam & (1 << 29)) != 0))
+                     {
+                        Running = false;
+                     }
+                  }
+               }
+               else
+               {
+                  TranslateMessage(&message);
+                  DispatchMessage(&message);
+               }
             }
             
             //game input, do we need more frequent polls
@@ -674,7 +693,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
             bool soundWasValid = false;
             //Note:Direct sound output test
-            DWORD playCursor, writeCursor, bytesToWrite, byteToLock;
+            DWORD playCursor = 0;
+            DWORD writeCursor=0; 
+            DWORD bytesToWrite=0; 
+            DWORD byteToLock=0;
             if (SUCCEEDED(win32SoundOutput.SoundBuffer->GetCurrentPosition(&playCursor, &writeCursor)))
             {
                bytesToWrite = 0;
@@ -716,6 +738,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             QueryPerformanceCounter(&endCounter);
             uint64_t endCycleCount = __rdtsc();
             local_persist int printy = 0;
+            #if 0
             if (0 && (printy++ % 60) == 0)
             {
                int64_t counterElapsed = endCounter.QuadPart - lastCounter.QuadPart;
@@ -727,6 +750,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                snprintf(counterReport, sizeof(counterReport), "Frame Information: %0.2fmc/f   %0.2fms/f   %lldfps\n", mcpf, msElapsed, fps);
                OutputDebugStringA(counterReport);
             }
+            #endif
             lastCycleCount = endCycleCount;
             lastCounter.QuadPart = endCounter.QuadPart;
          }

@@ -21,9 +21,9 @@
 
 
 #if EMEAKA_SLOW
-#define Assert(expression) if(!(expression)) {*(int *)0 = 0 ;}
+#define Assert(expression, msg) if(!(expression)) {*(int *)0 = 0 ;}
 #else
-#define Assert(expression)
+#define Assert(expression, msg)
 #endif
 
 //types
@@ -92,9 +92,32 @@ struct GameControllerInput
   float LeftTrigger;
 };
 
+struct GameKeyboardInput
+{
+  GameButtonState ShiftButton;
+  GameButtonState AltButton;
+  GameButtonState CtrlButton;
+  GameButtonState Key[255];
+};
+
+struct GameMouseInput
+{
+  bool MouseInWindow;
+
+  float MouseLocationX;
+  float MouseLocationY;
+  float WheelDelta;
+
+  GameButtonState LeftButton;
+  GameButtonState RightButton;
+  GameButtonState MiddleButton;
+};
+
 struct GameInputBuffer
 {
   //keyboard junk?
+  GameMouseInput MouseInput;
+  GameKeyboardInput KeyboardInput;
   GameControllerInput ControllerInput[4];
 };
 
