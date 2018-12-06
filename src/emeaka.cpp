@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-#define RGB_TO_UINT32(r, g, b) (((uint8_t)(r) << 16) | ((uint8_t)(g) << 8) | (uint8_t)(b))
+
 
 internal void TempRenderWeirdGradient(GameOffscreenBuffer *offscreenBuffer, int xOffset, int yOffset)
 {
@@ -20,11 +20,11 @@ internal void TempRenderWeirdGradient(GameOffscreenBuffer *offscreenBuffer, int 
 
 //let's agree on
 
-internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, int toneHz)
+internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, float toneHz)
 {
   local_persist float tSine = 0.0f;
   int16_t toneVolume = 1500;
-  int WavePeriod = soundBuffer->SamplesPerSecond / toneHz;
+  float wavePeriod = ((float)soundBuffer->SamplesPerSecond / (float)toneHz);
   int16_t *sample_out = soundBuffer->SampleBuffer;
   //DWORD soundBuffer1SampleCount = soundBuffer1Size / soundOutput->BytesPerSample;
   for (int sampleIndex = 0; sampleIndex < soundBuffer->SampleCount; ++sampleIndex)
@@ -34,7 +34,8 @@ internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, int toneHz)
     *sample_out++ = sampleValue;
     *sample_out++ = sampleValue; //sampleValue;
 
-    tSine += 2.0f * PI32 / (float)WavePeriod;
+    tSine += 2.0f * PI32 / wavePeriod;
+    tSine = fmodf(tSine, 2.0f * PI32);
   }
 }
 
@@ -52,15 +53,13 @@ internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *o
       PlatformWriteEntireFile("test2.png", fileReadResult.FileSize, fileReadResult.Contents);
       PlatformFreeFileMemory(fileReadResult.Contents);
     }
-
-    gameState->ToneHz = 261;
     //why is this a bad idea?
     gameMemory->IsInitialized = true;
   }
 
-  gameState->BlueOffset += int(5.f * inputBuffer->ControllerInput[0].LeftStick.AverageX);
-  gameState->GreenOffset -= int(5.f * inputBuffer->ControllerInput[0].LeftStick.AverageY);
-  gameState->ToneHz = int(512.f + inputBuffer->ControllerInput[0].RightStick.AverageY * 256.f);
+  gameState->BlueOffset += int(50.f * inputBuffer->ControllerInput[0].LeftStick.AverageX);
+  gameState->GreenOffset -= int(50.f * inputBuffer->ControllerInput[0].LeftStick.AverageY);
+  gameState->ToneHz = 1024.f + inputBuffer->ControllerInput[0].RightStick.AverageY * 768.f;
 
   if(inputBuffer->KeyboardInput.Key['A'].IsDown)
   {

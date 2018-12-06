@@ -11,7 +11,7 @@
 #define PI32 3.14159265359f
 
 //Macros
-
+#define RGB_TO_UINT32(r, g, b) (((uint8_t)(r) << 16) | ((uint8_t)(g) << 8) | (uint8_t)(b))
 #define ArrayCount(array) (sizeof(array)/sizeof((array)[0]))
 
 #define KiloBytes(x) ((x)*(size_t)1024)
@@ -21,7 +21,7 @@
 
 
 #if EMEAKA_SLOW
-#define Assert(expression, msg) if(!(expression)) {*(int *)0 = 0 ;}
+#define Assert(expression, msg) if(!(expression)) {PlatformAssertFail(msg);}
 #else
 #define Assert(expression, msg)
 #endif
@@ -126,7 +126,7 @@ struct GameInputBuffer
 
 struct GameState
 {
-  int ToneHz;
+  float ToneHz;
   int GreenOffset;
   int BlueOffset;
 };
@@ -159,6 +159,7 @@ struct DebugFileResult
   size_t FileSize;
   void* Contents;
 };
+internal void PlatformAssertFail(char *failureMsg);
 internal DebugFileResult PlatformReadEntireFile(char *filename);
 internal void PlatformFreeFileMemory(void *memory);
 internal bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *memory);

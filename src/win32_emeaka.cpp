@@ -17,6 +17,7 @@
 
 //GLOBALS
 global_variable Win32OffscreenBuffer OffscreenBuffer;
+global_variable int64_t PerformanceCounterFrequency;
 global_variable bool Running;
 
 //Stubbing out XInput to allow for dynamic loading
@@ -178,6 +179,12 @@ internal void Win32InitDSound(HWND window, Win32SoundOuput *soundOutput)
    }
 }
 //end dsound
+internal void PlatformAssertFail(char * msg)
+{
+   OutputDebugStringA(msg);
+   __debugbreak();
+}
+
 
 internal DebugFileResult PlatformReadEntireFile(char *filename)
 {
@@ -322,12 +329,12 @@ internal void Win32ProcessWindowMessages(HWND window, GameInputBuffer *inputBuff
             {
                inputBuffer->KeyboardInput.UpArrow.IsDown = isDown;
                inputBuffer->KeyboardInput.UpArrow.HalfTransitions = (isDown == wasDown) ? 0 : 1;
-            } 
+            }
             else if (VKCode == VK_DOWN)
             {
                inputBuffer->KeyboardInput.DownArrow.IsDown = isDown;
                inputBuffer->KeyboardInput.DownArrow.HalfTransitions = 1;
-            } 
+            }
             else if (VKCode == VK_LEFT)
             {
                inputBuffer->KeyboardInput.LeftArrow.IsDown = isDown;
@@ -348,7 +355,7 @@ internal void Win32ProcessWindowMessages(HWND window, GameInputBuffer *inputBuff
                inputBuffer->KeyboardInput.Key[' '].IsDown = isDown;
                inputBuffer->KeyboardInput.Key[' '].HalfTransitions = 1;
             }
-            else if (VKCode >= 'A' && VKCode <= 'Z' || 
+            else if (VKCode >= 'A' && VKCode <= 'Z' ||
                      VKCode >= '0' && VKCode <= '9')
             {
                inputBuffer->KeyboardInput.Key[VKCode].IsDown = isDown;
@@ -495,28 +502,27 @@ internal void Win32ProcessGamepadInput(XINPUT_GAMEPAD *gamepad, size_t controlle
 internal void
 Win32PrepareInputBuffers(GameInputBuffer *currentInputBuffer, GameInputBuffer *lastInputBuffer)
 {
-  ZeroMemory(currentInputBuffer, sizeof(GameInputBuffer));
-  currentInputBuffer->KeyboardInput.ShiftButton.IsDown = lastInputBuffer->KeyboardInput.ShiftButton.IsDown;
-  currentInputBuffer->KeyboardInput.AltButton.IsDown = lastInputBuffer->KeyboardInput.AltButton.IsDown;
-  currentInputBuffer->KeyboardInput.EscapeButton.IsDown = lastInputBuffer->KeyboardInput.EscapeButton.IsDown;
-  currentInputBuffer->KeyboardInput.UpArrow.IsDown = lastInputBuffer->KeyboardInput.UpArrow.IsDown;
-  currentInputBuffer->KeyboardInput.DownArrow.IsDown = lastInputBuffer->KeyboardInput.DownArrow.IsDown;
-  currentInputBuffer->KeyboardInput.RightArrow.IsDown = lastInputBuffer->KeyboardInput.RightArrow.IsDown;
-  currentInputBuffer->KeyboardInput.LeftArrow.IsDown = lastInputBuffer->KeyboardInput.LeftArrow.IsDown;
-  currentInputBuffer->KeyboardInput.CtrlButton.IsDown = lastInputBuffer->KeyboardInput.CtrlButton.IsDown;
-  for(int i = 0; i < 255; ++i)
-  {
-     currentInputBuffer->KeyboardInput.Key[i].IsDown = lastInputBuffer->KeyboardInput.Key[i].IsDown;
-  }
-  for(int i = 0; i < 12; ++i)
-  {
-     currentInputBuffer->KeyboardInput.FKey[i].IsDown = lastInputBuffer->KeyboardInput.FKey[i].IsDown;
-  }
+   ZeroMemory(currentInputBuffer, sizeof(GameInputBuffer));
+   currentInputBuffer->KeyboardInput.ShiftButton.IsDown = lastInputBuffer->KeyboardInput.ShiftButton.IsDown;
+   currentInputBuffer->KeyboardInput.AltButton.IsDown = lastInputBuffer->KeyboardInput.AltButton.IsDown;
+   currentInputBuffer->KeyboardInput.EscapeButton.IsDown = lastInputBuffer->KeyboardInput.EscapeButton.IsDown;
+   currentInputBuffer->KeyboardInput.UpArrow.IsDown = lastInputBuffer->KeyboardInput.UpArrow.IsDown;
+   currentInputBuffer->KeyboardInput.DownArrow.IsDown = lastInputBuffer->KeyboardInput.DownArrow.IsDown;
+   currentInputBuffer->KeyboardInput.RightArrow.IsDown = lastInputBuffer->KeyboardInput.RightArrow.IsDown;
+   currentInputBuffer->KeyboardInput.LeftArrow.IsDown = lastInputBuffer->KeyboardInput.LeftArrow.IsDown;
+   currentInputBuffer->KeyboardInput.CtrlButton.IsDown = lastInputBuffer->KeyboardInput.CtrlButton.IsDown;
+   for (int i = 0; i < 255; ++i)
+   {
+      currentInputBuffer->KeyboardInput.Key[i].IsDown = lastInputBuffer->KeyboardInput.Key[i].IsDown;
+   }
+   for (int i = 0; i < 12; ++i)
+   {
+      currentInputBuffer->KeyboardInput.FKey[i].IsDown = lastInputBuffer->KeyboardInput.FKey[i].IsDown;
+   }
 
-  currentInputBuffer->MouseInput.MouseInWindow = lastInputBuffer->MouseInput.MouseInWindow;
-  currentInputBuffer->MouseInput.MouseLocationX = lastInputBuffer->MouseInput.MouseLocationX;
-  currentInputBuffer->MouseInput.MouseLocationY = lastInputBuffer->MouseInput.MouseLocationY;
-
+   currentInputBuffer->MouseInput.MouseInWindow = lastInputBuffer->MouseInput.MouseInWindow;
+   currentInputBuffer->MouseInput.MouseLocationX = lastInputBuffer->MouseInput.MouseLocationX;
+   currentInputBuffer->MouseInput.MouseLocationY = lastInputBuffer->MouseInput.MouseLocationY;
 }
 internal void Win32ClearSoundBuffer(Win32SoundOuput *soundOutput)
 {
@@ -570,12 +576,71 @@ internal void Win32FillSoundBuffer(Win32SoundOuput *soundOutput, DWORD byteToLoc
    }
 }
 
+internal void
+Win32DebugDrawLine(Win32OffscreenBuffer *offscreenBuffer, int32_t startx, int32_t starty, int32_t endx, int32_t endy, uint8_t r, uint8_t g, uint8_t b)
+{
+   //do a thing
+}
+
+
+internal void
+Win32DebugDrawVertical(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, int32_t height, uint8_t r, uint8_t g, uint8_t b)
+{
+   for(uint32_t cur_y = y; y < height; y++)
+   {
+      size_t pixel = y * offscreenBuffer->Width + x;
+      ((uint32_t *)(offscreenBuffer->Memory))[pixel] = RGB_TO_UINT32(r, g, b);
+   }
+}
+
+
+
+internal void Win32DebugSyncDisplay(Win32OffscreenBuffer *offscreenBuffer, size_t lastPlayCursorSize, DWORD *lastPlayCursor, Win32SoundOuput soundOutputBuffer, float secondsPerFrame)
+{
+   offscreenBuffer->Width;
+   soundOutputBuffer.SamplesPerSecond;
+
+   int padx = 16;
+   for(int i = 0; i < lastPlayCursorSize; ++i)
+   {
+      uint32_t xpos = padx + (uint32_t)((float)(offscreenBuffer->Width-2*padx) * ((float)lastPlayCursor[i] / (float)soundOutputBuffer.BufferSize));
+      uint32_t ypos = 100;
+      uint32_t height = 200;
+      Win32DebugDrawVertical(offscreenBuffer, xpos, ypos, height, 255, 255 , 255);
+   }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+inline float Win32GetSecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end)
+{
+   return (((float)end.QuadPart - (float)start.QuadPart) / ((float)PerformanceCounterFrequency));
+}
+
+inline LARGE_INTEGER Win32GetPerformanceCounter()
+{
+   LARGE_INTEGER counter;
+   QueryPerformanceCounter(&counter);
+   return counter;
+}
+
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLine, int showCode)
 {
    LARGE_INTEGER frequency;
    QueryPerformanceFrequency(&frequency);
-   int64_t performanceCounterFrequency = frequency.QuadPart;
-   performanceCounterFrequency = performanceCounterFrequency;
+   PerformanceCounterFrequency = frequency.QuadPart;
+
+   UINT desiredSchedulerMS = 1;
+   bool sleepIsGranular = (TIMERR_NOERROR == timeBeginPeriod(desiredSchedulerMS));
 
    Win32LoadXInput();
 
@@ -598,6 +663,11 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
    windowClass.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
    windowClass.lpszClassName = "emeakaWindowClass";
    windowClass.hIconSm = LoadIcon(windowClass.hInstance, IDI_APPLICATION);
+
+   //get this a better way
+   const int monitorRefreshHz = 60;
+   const int gameUpdateHz = monitorRefreshHz / 2;
+   const float targetFrameTime = 1.f / (float)gameUpdateHz;
 
    if (RegisterClassExA(&windowClass))
    {
@@ -656,8 +726,16 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             return -1;
          }
 
-         LARGE_INTEGER lastCounter;
-         QueryPerformanceCounter(&lastCounter);
+         //random debug stuff
+         size_t DebugLastPlayCursorIndex = 0;
+         DWORD DebugLastPlayCursor[gameUpdateHz] = {};
+
+
+
+
+
+
+         LARGE_INTEGER lastCounter = Win32GetPerformanceCounter();
          uint64_t lastCycleCount = __rdtsc();
          while (Running)
          {
@@ -706,7 +784,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
             for (int controllerIndex = 0; controllerIndex < XUSER_MAX_COUNT; ++controllerIndex)
             {
-               if(currentInputBuffer->ControllerInput[controllerIndex].Connected)
+               if (currentInputBuffer->ControllerInput[controllerIndex].Connected)
                {
                   XINPUT_VIBRATION vibration = {};
                   vibration.wLeftMotorSpeed = (WORD)currentInputBuffer->ControllerInput[controllerIndex].LeftVibration;
@@ -727,28 +805,73 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             HDC deviceContext = GetDC(window);
 
             Win32WindowDimensions windowDimensions = GetWin32WindowDimensions(window);
+
+            LARGE_INTEGER workCounter = Win32GetPerformanceCounter();
+
+            float timeElapsedThisFrame = Win32GetSecondsElapsed(lastCounter, workCounter);
+
+            if (timeElapsedThisFrame < targetFrameTime)
+            {
+               while (timeElapsedThisFrame < targetFrameTime)
+               {
+                  if (sleepIsGranular)
+                  {
+                     DWORD timeToSleep = (DWORD)(1000.f * (targetFrameTime - timeElapsedThisFrame));
+                     if (timeToSleep > 0)
+                     {
+                        Sleep(timeToSleep);
+                     }
+                  }
+                  timeElapsedThisFrame = Win32GetSecondsElapsed(lastCounter, Win32GetPerformanceCounter());
+               }
+            }
+            else
+            {
+               OutputDebugStringA("Missed Frame\n");
+            }
+
+#if EMEAKA_INTERNAL
+
+            Win32DebugSyncDisplay(&OffscreenBuffer, gameUpdateHz, DebugLastPlayCursor, win32SoundOutput,targetFrameTime);
+#endif
+
             Win32DisplayBufferInWindow(deviceContext, windowDimensions.Width, windowDimensions.Height, &OffscreenBuffer, 0, 0, windowDimensions.Width, windowDimensions.Height);
             ReleaseDC(window, deviceContext);
 
-            LARGE_INTEGER endCounter;
-            QueryPerformanceCounter(&endCounter);
-            uint64_t endCycleCount = __rdtsc();
-            local_persist int printy = 0;
-#if 0
-            if (0 && (printy++ % 60) == 0)
+
+
+            //strange platform debug code goes here...
+            #if EMEAKA_INTERNAL
             {
-               int64_t counterElapsed = endCounter.QuadPart - lastCounter.QuadPart;
-               uint64_t cyclesElapsed = endCycleCount - lastCycleCount;
+               DWORD tempPlayCursor;
+               DWORD tempWriteCursor;
+               win32SoundOutput.SoundBuffer->GetCurrentPosition(&tempPlayCursor, &tempWriteCursor);
+               DebugLastPlayCursor[DebugLastPlayCursorIndex++] = tempPlayCursor;
+               DebugLastPlayCursorIndex = DebugLastPlayCursorIndex % gameUpdateHz;
+            }
+            #endif
+
+
+
+
+            LARGE_INTEGER endCounter = Win32GetPerformanceCounter();
+            uint64_t endCycleCount = __rdtsc();
+            uint64_t cyclesElapsed = endCycleCount - lastCycleCount;
+
+            local_persist int printy = 0;
+            if ((printy++ % 60) == 0)
+            {
+               float counterElapsed = Win32GetSecondsElapsed(lastCounter, endCounter);
                char counterReport[512];
-               float msElapsed = (1000.f * (float)counterElapsed) / (float)performanceCounterFrequency;
-               int64_t fps = performanceCounterFrequency / counterElapsed;
+               float msElapsed = 1000.f * counterElapsed;
+               float fps = 1.f / counterElapsed;
                float mcpf = (float)cyclesElapsed / 1000.f / 1000.f;
-               snprintf(counterReport, sizeof(counterReport), "Frame Information: %0.2fmc/f   %0.2fms/f   %lldfps\n", mcpf, msElapsed, fps);
+               snprintf(counterReport, sizeof(counterReport), "Frame Information: %0.2fmc/f   %0.2fms/f   %0.1ffps\n", mcpf, msElapsed, fps);
                OutputDebugStringA(counterReport);
             }
-#endif
+
             lastCycleCount = endCycleCount;
-            lastCounter.QuadPart = endCounter.QuadPart;
+            lastCounter = endCounter;
          }
       }
    }
