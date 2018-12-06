@@ -728,7 +728,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
          //random debug stuff
          size_t DebugLastPlayCursorIndex = 0;
-         DWORD DebugLastPlayCursor[gameUpdateHz] = {};
+         DWORD DebugLastPlayCursor[15] = {};
 
 
 
@@ -812,8 +812,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
             if (timeElapsedThisFrame < targetFrameTime)
             {
-               while (timeElapsedThisFrame < targetFrameTime)
-               {
+               
                   if (sleepIsGranular)
                   {
                      DWORD timeToSleep = (DWORD)(1000.f * (targetFrameTime - timeElapsedThisFrame));
@@ -823,6 +822,9 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                      }
                   }
                   timeElapsedThisFrame = Win32GetSecondsElapsed(lastCounter, Win32GetPerformanceCounter());
+               while (timeElapsedThisFrame < targetFrameTime)
+               {
+                  timeElapsedThisFrame = Win32GetSecondsElapsed(lastCounter, Win32GetPerformanceCounter());
                }
             }
             else
@@ -830,16 +832,19 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                OutputDebugStringA("Missed Frame\n");
             }
 
+            LARGE_INTEGER endCounter = Win32GetPerformanceCounter();
+            uint64_t endCycleCount = __rdtsc();
+
+
 #if EMEAKA_INTERNAL
 
-            Win32DebugSyncDisplay(&OffscreenBuffer, gameUpdateHz, DebugLastPlayCursor, win32SoundOutput,targetFrameTime);
+            Win32DebugSyncDisplay(&OffscreenBuffer, ArrayCount(DebugLastPlayCursor), DebugLastPlayCursor, win32SoundOutput,targetFrameTime);
 #endif
 
             Win32DisplayBufferInWindow(deviceContext, windowDimensions.Width, windowDimensions.Height, &OffscreenBuffer, 0, 0, windowDimensions.Width, windowDimensions.Height);
             ReleaseDC(window, deviceContext);
 
-
-
+            
             //strange platform debug code goes here...
             #if EMEAKA_INTERNAL
             {
@@ -847,15 +852,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                DWORD tempWriteCursor;
                win32SoundOutput.SoundBuffer->GetCurrentPosition(&tempPlayCursor, &tempWriteCursor);
                DebugLastPlayCursor[DebugLastPlayCursorIndex++] = tempPlayCursor;
-               DebugLastPlayCursorIndex = DebugLastPlayCursorIndex % gameUpdateHz;
+               DebugLastPlayCursorIndex = DebugLastPlayCursorIndex % ArrayCount(DebugLastPlayCursor);
             }
             #endif
-
-
-
-
-            LARGE_INTEGER endCounter = Win32GetPerformanceCounter();
-            uint64_t endCycleCount = __rdtsc();
+         
             uint64_t cyclesElapsed = endCycleCount - lastCycleCount;
 
             local_persist int printy = 0;
