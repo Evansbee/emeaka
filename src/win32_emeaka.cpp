@@ -990,11 +990,15 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                   (((float)audioLatencyBytes / (float)win32SoundOutput.BytesPerSample) /
                   (float)win32SoundOutput.SamplesPerSecond);
                         
-               //char TextBuffer[256];
-               //_snprintf_s(TextBuffer, sizeof(TextBuffer),
-                           //"BTL:%u TC:%u BTW:%u - PC:%u WC:%u DELTA:%u (%fs)\n",
-                           //byteToLock, targetCursor, bytesToWrite,
-                          // playCursor, writeCursor, audioLatencyBytes, audioLatencySeconds);
+
+   //Win32DebugDrawText(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, char* string,uint8_t r, uint8_t g, uint8_t b,bool shadow)
+                     
+               char TextBuffer[256];
+               _snprintf_s(TextBuffer, sizeof(TextBuffer),
+                           "BTL:%u \nTC:%u \nBTW:%u\nPC:%u \nWC:%u \nDELTA:%u (%fs)",
+                           byteToLock, targetCursor, bytesToWrite,
+                           playCursor, writeCursor, audioLatencyBytes, audioLatencySeconds);
+               Win32DebugDrawText(&OffscreenBuffer,8,8,TextBuffer,255,255,255,true);
                //OutputDebugStringA(TextBuffer);
 
 #endif
