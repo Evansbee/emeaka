@@ -39,7 +39,7 @@ internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, float toneHz)
   }
 }
 
-internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
+internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
 {
   Assert(sizeof(GameState) <= gameMemory->PermanentStorageSize, "Permanent Storage Inadequate");
 
@@ -68,9 +68,17 @@ internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *o
   }
 
   TempRenderWeirdGradient(offscreenBuffer, gameState->BlueOffset, gameState->GreenOffset);
-  TempComposeSineWave(soundBuffer, gameState->ToneHz);
+  
   //Todo: make this more complicated
   
 //Todo: make this more complicated
 //GameOutputSound(int sampleCount, soundBuffer)
+}
+
+
+internal void
+GameGetSoundSamples(GameMemory *gameMemory,  GameSoundBuffer *soundBuffer)
+{
+  GameState *gameState = (GameState *)gameMemory->PermanentStorage;
+  TempComposeSineWave(soundBuffer, gameState->ToneHz);
 }

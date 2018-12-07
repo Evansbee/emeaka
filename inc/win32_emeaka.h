@@ -22,6 +22,7 @@ struct Win32SoundOuput
    int Channels;
    int BufferSize;
    int LatencySampleCount;
+   int SafetyBytes;
    LPDIRECTSOUNDBUFFER SoundBuffer;
 };
 
@@ -29,4 +30,16 @@ struct Win32WindowDimensions
 {
    int Width;
    int Height;
+};
+
+
+struct Win32DebugTimeMarker
+{
+   DWORD OutputPlayCursor;
+   DWORD OutputWriteCursor;
+   DWORD OutputLocation;
+   DWORD OutputByteCount;
+   DWORD ExpectedFlipPlayCursor;
+   DWORD FlipPlayCursor;
+   DWORD FlipWriteCursor;
 };

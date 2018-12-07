@@ -167,4 +167,7 @@ internal bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *m
 //Game provides to platform layer
 //input, bitmap to output and sound output, timing
 internal void
-GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameSoundBuffer *soundBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks);
+GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks);
+
+internal void
+GameGetSoundSamples(GameMemory *gameMemory,  GameSoundBuffer *soundBuffer);
