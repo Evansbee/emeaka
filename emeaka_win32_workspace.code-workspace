@@ -8,6 +8,7 @@
 		"files.associations": {
 			"climits": "cpp",
 			"cstdint": "cpp"
-		}
+		},
+		"python.pythonPath": "C:\\Users\\eackmann\\.virtualenvs\\advent-sxMSPmm0\\Scripts\\python.exe"
 	}
 }

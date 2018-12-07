@@ -12,5 +12,5 @@ set LinkOpts32Bit=-subsystem:windows,5.1
 if not exist ".\bin" mkdir .\bin
 pushd .\bin
 cl  %EmeakaCompilerFlags% %CommonCompilerFlags% -Fmwin32_emeaka.map ..\src\win32_emeaka.cpp -I..\inc /link %LinkOpts64Bit% %CommonLinkerFlags%
-cl  %EmeakaCompilerFlags% %CommonCompilerFlags% -Fmemeaka.map /ld ..\src\emeaka.cpp -I..\inc /link %LinkOpts64Bit% %CommonLinkerFlags%
+REM cl  %EmeakaCompilerFlags% %CommonCompilerFlags% -Fmemeaka.map /ld ..\src\emeaka.cpp -I..\inc /link %LinkOpts64Bit% %CommonLinkerFlags%
 popd

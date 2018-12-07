@@ -154,7 +154,7 @@ struct DebugFileResult
   size_t FileSize;
   void* Contents;
 };
-
+#endif
 
 
 #define PLATFORM_READ_ENTIRE_FILE(name) DebugFileResult name(char *filename)
@@ -163,7 +163,7 @@ typedef PLATFORM_READ_ENTIRE_FILE(PlatformReadEntireFileType);
 #define PLATFORM_FREE_FILE_MEMORY(name) void name(void *memory)
 typedef PLATFORM_FREE_FILE_MEMORY(PlatformFreeFileMemoryType);
 
-#define PLATFORM_WRITE_ENTIRE_FILE(name) void name(char *filename, size_t memorySize, void *memory)
+#define PLATFORM_WRITE_ENTIRE_FILE(name) bool name(char *filename, size_t memorySize, void *memory)
 typedef PLATFORM_WRITE_ENTIRE_FILE(PlatformWriteEntireFileType);
 
 
@@ -191,3 +191,11 @@ struct GameMemory
 typedef GAME_UPDATE_AND_RENDER(GameUpdateAndRenderType);
 #define GAME_GET_SOUND_SAMPLES(name) void name(GameMemory *gameMemory,  GameSoundBuffer *soundBuffer)
 typedef GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesType);
+
+
+DebugFileResult PlatformReadEntireFile(char *filename);
+void PlatformFreeFileMemory(void *memory);
+bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *memory);
+internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks);
+internal void
+GameGetSoundSamples(GameMemory *gameMemory,  GameSoundBuffer *soundBuffer);

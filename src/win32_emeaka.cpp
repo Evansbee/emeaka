@@ -9,7 +9,7 @@
 //your own includes
 #include "win32_emeaka.h"
 #include "emeaka.h"
-
+#include "emeaka.cpp"
 
 #define LOG(x) OutputDebugStringA(x)
 
@@ -208,15 +208,15 @@ internal void Win32LoadGameDLL(Win32GameFunctions *gameFunctions)
 
       if(!gameFunctions->GameUpdateAndRender || !gameFunctions->GameGetSoundSamples)
       {
-         gameFunctions->GameUpdateAndRender = GameUpdateAndRenderStub;
-         gameFunctions->GameGetSoundSamples = GameGetSoundSamplesStub;
+         gameFunctions->GameUpdateAndRender = GameUpdateAndRender;
+         gameFunctions->GameGetSoundSamples = GameGetSoundSamples;
       }
    }
 
    if(!gameFunctions->GameLibrary || !gameFunctions->GameUpdateAndRender || !gameFunctions->GameGetSoundSamples)
       {
-         gameFunctions->GameUpdateAndRender = GameUpdateAndRenderStub;
-         gameFunctions->GameGetSoundSamples = GameGetSoundSamplesStub;
+         gameFunctions->GameUpdateAndRender = GameUpdateAndRender;
+         gameFunctions->GameGetSoundSamples = GameGetSoundSamples;
       }
 }
 
@@ -632,19 +632,61 @@ Win32DebugDrawLine(Win32OffscreenBuffer *offscreenBuffer, int32_t startx, int32_
 {
    //do a thing
 }
-
-
-internal void
-Win32DebugDrawVertical(Win32OffscreenBuffer *offscreenBuffer, uint32_t x, uint32_t y, uint32_t height, uint8_t r, uint8_t g, uint8_t b)
+internal inline void Win32Plot(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, uint32_t color)
 {
-   for(uint32_t cur_y = y; cur_y < y + height; cur_y++)
+   if(x >= 0 && x < offscreenBuffer->Width && y >= 0 && y < offscreenBuffer->Height)
    {
-      size_t pixel = (cur_y * offscreenBuffer->Width) + x;
-      ((uint32_t *)(offscreenBuffer->Memory))[pixel] = RGB_TO_UINT32(r, g, b);
+      ((uint32_t *)(offscreenBuffer->Memory))[(y * offscreenBuffer->Width) + x] = color;
    }
 }
 
+internal void
+Win32DebugDrawVertical(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, int32_t height, uint8_t r, uint8_t g, uint8_t b)
+{
+   for(int32_t cur_y = y; cur_y < y + height; cur_y++)
+   {
+      Win32Plot(offscreenBuffer, x, cur_y, RGB_TO_UINT32(r,g,b));
+   }
+}
 
+internal void
+Win32DebugDrawCharacter(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, char c,uint32_t color ,bool shadow)
+{
+   for(int plot_y = 0; plot_y < Win32FixedFontHeight; ++plot_y)
+   {
+      for(int plot_x = 0; plot_x < Win32FixedFontWidth; ++plot_x)
+      {
+         if((Win32FixedFont[c][plot_y] & (1 << (8-plot_x))) > 0)
+         {
+            Win32Plot(offscreenBuffer, x + plot_x, y + plot_y , color);
+            if(shadow)
+            {
+               Win32Plot(offscreenBuffer, x + plot_x + 1, y + plot_y + 1 , 0);
+            }
+         }
+      }
+   }
+}
+internal void
+Win32DebugDrawText(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, char* string,uint8_t r, uint8_t g, uint8_t b,bool shadow)
+{
+   uint32_t current_x = x;
+   uint32_t current_y = y;
+   uint32_t color = RGB_TO_UINT32(r,g,b);
+   for(char* c = string; *c != '\0'; ++c)
+   {
+      if(*c =='\n')
+      {
+         current_y += Win32FixedFontYAdvance;
+         current_x = x;
+      }
+      else
+      {
+		  Win32DebugDrawCharacter(offscreenBuffer,current_x, current_y, *c, color, shadow);
+		  current_x += Win32FixedFontXAdvance;
+      }
+   }
+} 
 internal void Win32DebugSyncDisplay(Win32OffscreenBuffer *offscreenBuffer, size_t markerCount, Win32DebugTimeMarker *markers, size_t currentMarker, Win32SoundOuput *soundOutputBuffer, float secondsPerFrame)
 {
    int padx = 16;
@@ -682,7 +724,11 @@ internal void Win32DebugSyncDisplay(Win32OffscreenBuffer *offscreenBuffer, size_
 
       
    }
+   Win32DebugDrawText(offscreenBuffer, 400, 400, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz",255, 255, 255, true);
+
 }
+
+
 
 
 internal inline float Win32GetSecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end)
@@ -741,7 +787,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
    //**************************************************************************
    //XInput Work
    //**************************************************************************
-   Win32ResizeDIBSection(&OffscreenBuffer, 1280, 720);
+   
 
    WNDCLASSEXA windowClass = {};
    windowClass.cbSize = sizeof(WNDCLASSEX);
@@ -771,6 +817,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
           NULL);
       if (window)
       {
+         Win32WindowDimensions dimensions = GetWin32WindowDimensions(window);
+         Win32ResizeDIBSection(&OffscreenBuffer, dimensions.Width, dimensions.Height);
          ShowWindow(window, showCode);
          UpdateWindow(window);
          HDC deviceContext = GetDC(window);
@@ -942,12 +990,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                   (((float)audioLatencyBytes / (float)win32SoundOutput.BytesPerSample) /
                   (float)win32SoundOutput.SamplesPerSecond);
                         
-               char TextBuffer[256];
-               _snprintf_s(TextBuffer, sizeof(TextBuffer),
-                           "BTL:%u TC:%u BTW:%u - PC:%u WC:%u DELTA:%u (%fs)\n",
-                           byteToLock, targetCursor, bytesToWrite,
-                           playCursor, writeCursor, audioLatencyBytes, audioLatencySeconds);
-               OutputDebugStringA(TextBuffer);
+               //char TextBuffer[256];
+               //_snprintf_s(TextBuffer, sizeof(TextBuffer),
+                           //"BTL:%u TC:%u BTW:%u - PC:%u WC:%u DELTA:%u (%fs)\n",
+                           //byteToLock, targetCursor, bytesToWrite,
+                          // playCursor, writeCursor, audioLatencyBytes, audioLatencySeconds);
+               //OutputDebugStringA(TextBuffer);
 
 #endif
                Win32FillSoundBuffer(&win32SoundOutput, byteToLock, bytesToWrite, &soundOutputBuffer);

@@ -46,12 +46,17 @@ internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *o
   GameState *gameState = (GameState *)gameMemory->PermanentStorage;
   if (!gameMemory->IsInitialized)
   {
+    gameMemory->PlatformFunctions.PlatformFreeFileMemory = PlatformFreeFileMemory;
+    gameMemory->PlatformFunctions.PlatformReadEntireFile = PlatformReadEntireFile;
+    gameMemory->PlatformFunctions.PlatformWriteEntireFile = PlatformWriteEntireFile;
+
+
     char *filename = "test.png";
-    DebugFileResult fileReadResult = PlatformReadEntireFile(filename);
+    DebugFileResult fileReadResult = gameMemory->PlatformFunctions.PlatformReadEntireFile(filename);
     if(fileReadResult.Contents)
     {
-      PlatformWriteEntireFile("test2.png", fileReadResult.FileSize, fileReadResult.Contents);
-      PlatformFreeFileMemory(fileReadResult.Contents);
+      gameMemory->PlatformFunctions.PlatformWriteEntireFile("test2.png", fileReadResult.FileSize, fileReadResult.Contents);
+      gameMemory->PlatformFunctions.PlatformFreeFileMemory(fileReadResult.Contents);
     }
     //why is this a bad idea?
     gameMemory->IsInitialized = true;
