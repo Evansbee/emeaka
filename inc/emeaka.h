@@ -21,10 +21,12 @@
 
 
 #if EMEAKA_SLOW
-#define Assert(expression, msg) if(!(expression)) {PlatformAssertFail(msg);}
+#define Assert(expression, msg) if(!(expression)) {*(int *)0 = 0;}
 #else
 #define Assert(expression, msg)
 #endif
+
+
 
 //types
 struct GameOffscreenBuffer
@@ -131,14 +133,7 @@ struct GameState
   int BlueOffset;
 };
 
-struct GameMemory
-{
-  bool IsInitialized;
-  size_t PermanentStorageSize;
-  void* PermanentStorage; //required to be zero at startup.
-  size_t TransientStorageSize;
-  void* TransientStorage;
-};
+
 
 
 struct GameClocks
@@ -159,15 +154,40 @@ struct DebugFileResult
   size_t FileSize;
   void* Contents;
 };
-internal void PlatformAssertFail(char *failureMsg);
-internal DebugFileResult PlatformReadEntireFile(char *filename);
-internal void PlatformFreeFileMemory(void *memory);
-internal bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *memory);
-#endif
+
+
+
+#define PLATFORM_READ_ENTIRE_FILE(name) DebugFileResult name(char *filename)
+typedef PLATFORM_READ_ENTIRE_FILE(PlatformReadEntireFileType);
+
+#define PLATFORM_FREE_FILE_MEMORY(name) void name(void *memory)
+typedef PLATFORM_FREE_FILE_MEMORY(PlatformFreeFileMemoryType);
+
+#define PLATFORM_WRITE_ENTIRE_FILE(name) void name(char *filename, size_t memorySize, void *memory)
+typedef PLATFORM_WRITE_ENTIRE_FILE(PlatformWriteEntireFileType);
+
+
+struct GamePlatformFunctions 
+{
+  PlatformReadEntireFileType *PlatformReadEntireFile;
+  PlatformFreeFileMemoryType *PlatformFreeFileMemory;
+  PlatformWriteEntireFileType *PlatformWriteEntireFile;
+};
+
+struct GameMemory
+{
+  GamePlatformFunctions PlatformFunctions;
+  bool IsInitialized;
+  size_t PermanentStorageSize;
+  void* PermanentStorage; //required to be zero at startup.
+  size_t TransientStorageSize;
+  void* TransientStorage;
+};
+
 //Game provides to platform layer
 //input, bitmap to output and sound output, timing
-internal void
-GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks);
 
-internal void
-GameGetSoundSamples(GameMemory *gameMemory,  GameSoundBuffer *soundBuffer);
+#define GAME_UPDATE_AND_RENDER(name) void name(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
+typedef GAME_UPDATE_AND_RENDER(GameUpdateAndRenderType);
+#define GAME_GET_SOUND_SAMPLES(name) void name(GameMemory *gameMemory,  GameSoundBuffer *soundBuffer)
+typedef GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesType);

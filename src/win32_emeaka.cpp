@@ -10,8 +10,6 @@
 #include "win32_emeaka.h"
 #include "emeaka.h"
 
-//Unity Build Garbage
-#include "emeaka.cpp"
 
 #define LOG(x) OutputDebugStringA(x)
 
@@ -179,14 +177,67 @@ internal void Win32InitDSound(HWND window, Win32SoundOuput *soundOutput)
    }
 }
 //end dsound
-internal void PlatformAssertFail(char * msg)
+
+
+
+
+struct Win32GameFunctions
+{
+   HMODULE GameLibrary;
+   GameUpdateAndRenderType *GameUpdateAndRender;
+   GameGetSoundSamplesType *GameGetSoundSamples;
+};
+
+GAME_UPDATE_AND_RENDER(GameUpdateAndRenderStub)
+{
+   return;
+}
+
+GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesStub)
+{
+   return;
+}
+
+internal void Win32LoadGameDLL(Win32GameFunctions *gameFunctions)
+{
+   gameFunctions->GameLibrary = LoadLibraryA("emeaka.dll");
+   if (gameFunctions->GameLibrary)
+   {
+      gameFunctions->GameUpdateAndRender =  (GameUpdateAndRenderType *)GetProcAddress(gameFunctions->GameLibrary, "GameUpdateAndRender");
+      gameFunctions->GameGetSoundSamples =  (GameGetSoundSamplesType *)GetProcAddress(gameFunctions->GameLibrary, "GameGetSoundSamples");
+
+      if(!gameFunctions->GameUpdateAndRender || !gameFunctions->GameGetSoundSamples)
+      {
+         gameFunctions->GameUpdateAndRender = GameUpdateAndRenderStub;
+         gameFunctions->GameGetSoundSamples = GameGetSoundSamplesStub;
+      }
+   }
+
+   if(!gameFunctions->GameLibrary || !gameFunctions->GameUpdateAndRender || !gameFunctions->GameGetSoundSamples)
+      {
+         gameFunctions->GameUpdateAndRender = GameUpdateAndRenderStub;
+         gameFunctions->GameGetSoundSamples = GameGetSoundSamplesStub;
+      }
+}
+
+internal void Win32UnloadGameDLL(Win32GameFunctions *gameFunctions)
+{
+   FreeLibrary(gameFunctions->GameLibrary);
+}
+
+internal bool Win32GameDLLNeedsRefreshed(Win32GameFunctions *gameFunctions)
+{
+   return false;
+}
+
+void PlatformAssertFail(char * msg)
 {
    OutputDebugStringA(msg);
    __debugbreak();
 }
 
 
-internal DebugFileResult PlatformReadEntireFile(char *filename)
+DebugFileResult PlatformReadEntireFile(char *filename)
 {
    HANDLE fileHandle = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
    DebugFileResult fileReadResult = {};
@@ -223,14 +274,14 @@ internal DebugFileResult PlatformReadEntireFile(char *filename)
    return fileReadResult;
 }
 
-internal void PlatformFreeFileMemory(void *memory)
+void PlatformFreeFileMemory(void *memory)
 {
    if (memory)
    {
       VirtualFree(memory, 0, MEM_RELEASE);
    }
 }
-internal bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *memory)
+bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *memory)
 {
    HANDLE fileHandle = CreateFileA(filename, GENERIC_WRITE, 0, 0, CREATE_NEW, 0, 0);
    if (fileHandle != INVALID_HANDLE_VALUE)
@@ -634,16 +685,6 @@ internal void Win32DebugSyncDisplay(Win32OffscreenBuffer *offscreenBuffer, size_
 }
 
 
-
-
-
-
-
-
-
-
-
-
 internal inline float Win32GetSecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end)
 {
    float result = (((float)(end.QuadPart - start.QuadPart)) / ((float)PerformanceCounterFrequency));
@@ -774,6 +815,11 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             return -1;
          }
 
+         //load up the game
+         Win32GameFunctions win32GameFunctions = {};
+         Win32LoadGameDLL(&win32GameFunctions);
+
+
          //random debug stuff
          size_t debugTimeMarkersIndex = 0;
          Win32DebugTimeMarker debugTimeMarkers[gameUpdateHz/2] = {};
@@ -807,7 +853,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             //**************************************************************************
             // UPDATE AND RENDER
             //**************************************************************************
-            GameUpdateAndRender(&gameMemory, (GameOffscreenBuffer *)(&OffscreenBuffer), currentInputBuffer, &gameClocks);
+            win32GameFunctions.GameUpdateAndRender(&gameMemory, (GameOffscreenBuffer *)(&OffscreenBuffer), currentInputBuffer, &gameClocks);
             //**************************************************************************
             // UPDATE AND RENDER
             //**************************************************************************
@@ -875,7 +921,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                //**************************************************************************
                // SOUND UPDATE
                //**************************************************************************
-               GameGetSoundSamples(&gameMemory, &soundOutputBuffer);
+               win32GameFunctions.GameGetSoundSamples(&gameMemory, &soundOutputBuffer);
 
                
 #ifdef EMEAKA_INTERNAL
