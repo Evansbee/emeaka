@@ -686,6 +686,7 @@ Win32DebugDrawLine(Win32OffscreenBuffer *offscreenBuffer, int32_t startx, int32_
 {
    //do a thing
 }
+
 internal inline void Win32Plot(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, uint32_t color)
 {
    if(x >= 0 && x < offscreenBuffer->Width && y >= 0 && y < offscreenBuffer->Height)
@@ -721,6 +722,8 @@ Win32DebugDrawCharacter(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_
       }
    }
 }
+
+
 internal void
 Win32DebugDrawText(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, char* string,uint8_t r, uint8_t g, uint8_t b,bool shadow)
 {
@@ -778,7 +781,7 @@ internal void Win32DebugSyncDisplay(Win32OffscreenBuffer *offscreenBuffer, size_
 
       
    }
-   Win32DebugDrawText(offscreenBuffer, 400, 400, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz",255, 255, 255, true);
+   Win32DebugDrawText(offscreenBuffer, 400, 400, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n1234567890\n!@#$%^&*()_-=+~`,./?><;'\":[]\\|}{}",255, 255, 255, true);
 
 }
 
@@ -797,6 +800,13 @@ internal inline LARGE_INTEGER Win32GetPerformanceCounter()
    QueryPerformanceCounter(&counter);
    return counter;
 }
+
+enum GameRecordingState
+{
+   InputNormal,
+   InputRecording,
+   InputPlaying,
+};
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLine, int showCode)
 {
@@ -820,6 +830,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
    GameClocks gameClocks = {};
 
+   GameRecordingState recordingState = InputNormal;
 
    //get this a better way
    const int monitorRefreshHz = 60;
@@ -871,8 +882,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
           NULL);
       if (window)
       {
-         Win32WindowDimensions dimensions = GetWin32WindowDimensions(window);
-         Win32ResizeDIBSection(&OffscreenBuffer, dimensions.Width, dimensions.Height);
+         Win32WindowDimensions windowDimensions = GetWin32WindowDimensions(window);
+         Win32ResizeDIBSection(&OffscreenBuffer, windowDimensions.Width, windowDimensions.Height);
          ShowWindow(window, showCode);
          UpdateWindow(window);
          HDC deviceContext = GetDC(window);
@@ -965,6 +976,28 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
             inputCompleteTime = Win32GetPerformanceCounter();
 
+            if(currentInputBuffer->KeyboardInput.Key['R'].IsDown && currentInputBuffer->KeyboardInput.Key['R'].HalfTransitions > 0 && recordingState == InputNormal)
+            {
+               recordingState = InputRecording;
+            }
+            else if(currentInputBuffer->KeyboardInput.Key['R'].IsDown && currentInputBuffer->KeyboardInput.Key['R'].HalfTransitions > 0 && recordingState == InputRecording)
+            {
+              recordingState = InputPlaying;
+            }
+            else if(currentInputBuffer->KeyboardInput.Key['R'].IsDown && currentInputBuffer->KeyboardInput.Key['R'].HalfTransitions > 0 )
+            {
+              recordingState = InputNormal;
+            }
+
+
+            if(recordingState == InputRecording)
+            {
+
+            } else if (recordingState == InputPlaying)
+            {
+
+            }
+          
             //**************************************************************************
             // UPDATE AND RENDER
             //**************************************************************************
@@ -1098,17 +1131,26 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             lastInputBuffer = tempInputBuffer;
 
             
-
-
+         
+            if(recordingState == InputNormal)
+            {
+               Win32DebugDrawText(&OffscreenBuffer, 16,windowDimensions.Height - Win32FixedFontAscent - 16, "Input: Normal",255,255,255,true);
+            }
+            else if(recordingState == InputRecording)
+            {
+               Win32DebugDrawText(&OffscreenBuffer,  16,windowDimensions.Height - Win32FixedFontAscent - 16,"Input: Recording",255,0,0,true);
+            }
+            else 
+            {
+               Win32DebugDrawText(&OffscreenBuffer,  16,windowDimensions.Height - Win32FixedFontAscent - 16,"Input: Playing",0,255,0,true);
+            }
             
-
-            Win32WindowDimensions windowDimensions = GetWin32WindowDimensions(window);
 
             preFlipTime = Win32GetPerformanceCounter();
 
             float timeElapsedThisFrame = Win32GetSecondsElapsed(startOfFrameTime, preFlipTime);
 
-			if (timeElapsedThisFrame < targetFrameTime)
+			   if (timeElapsedThisFrame < targetFrameTime)
             {
                if (sleepIsGranular)
                {
@@ -1153,20 +1195,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                }
             }
             #endif
-         
-            uint64_t cyclesElapsed = endCycleCount - lastCycleCount;
-
-            local_persist int printy = 0;
-            if ((printy++ % 60) == 0)
-            {
-               float counterElapsed = Win32GetSecondsElapsed(startOfFrameTime, endFrameTime);
-               char counterReport[512];
-               float msElapsed = 1000.f * counterElapsed;
-               float fps = 1.f / counterElapsed;
-               float mcpf = (float)cyclesElapsed / 1000.f / 1000.f;
-               snprintf(counterReport, sizeof(counterReport), "Frame Information: %0.2fmc/f   %0.2fms/f   %0.1ffps\n", mcpf, msElapsed, fps);
-               OutputDebugStringA(counterReport);
-            }
+                                 
             debugTimeMarkersIndex++;
             debugTimeMarkersIndex = debugTimeMarkersIndex % ArrayCount(debugTimeMarkers);
             lastCycleCount = endCycleCount;

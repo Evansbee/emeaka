@@ -132,6 +132,8 @@ struct GameState
   float ToneHz;
   int GreenOffset;
   int BlueOffset;
+  int PlayerX;
+  int PlayerY;
 };
 
 

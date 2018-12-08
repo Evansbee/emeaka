@@ -36,6 +36,28 @@ internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, float *tSine, fl
   }
 }
 
+internal void RenderPlayer(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, bool colorize)
+{
+  GameState *gameState = (GameState *)gameMemory->PermanentStorage;
+  for (int x = gameState->PlayerX - 10; x < gameState->PlayerX + 10; ++x)
+  {
+    for (int y = gameState->PlayerY - 10; y < gameState->PlayerY + 10; ++y)
+    {
+      if (x >= 0 && x < offscreenBuffer->Width && y >= 0 && y < offscreenBuffer->Height)
+      {
+        if(colorize)
+        {
+          ((uint32_t *)(offscreenBuffer->Memory))[(y * offscreenBuffer->Width) + x] = 0x0000FF00;
+        }
+        else
+        {
+          ((uint32_t *)(offscreenBuffer->Memory))[(y * offscreenBuffer->Width) + x] = 0xFFFFFFFF;
+        }
+      }
+    }
+  }
+}
+
 extern "C" void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
 {
   Assert(sizeof(GameState) <= gameMemory->PermanentStorageSize, "Permanent Storage Inadequate");
@@ -53,10 +75,16 @@ extern "C" void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer 
     //why is this a bad idea?
     gameState->tSine = 0.f;
     gameMemory->IsInitialized = true;
+    gameState->PlayerX = 100;
+    gameState->PlayerY = 100;
   }
 
-  gameState->BlueOffset += int(50.f * inputBuffer->ControllerInput[0].LeftStick.AverageX);
-  gameState->GreenOffset -= int(50.f * inputBuffer->ControllerInput[0].LeftStick.AverageY);
+  //gameState->BlueOffset += int(50.f * inputBuffer->ControllerInput[0].LeftStick.AverageX);
+  //gameState->GreenOffset -= int(50.f * inputBuffer->ControllerInput[0].LeftStick.AverageY);
+
+  gameState->PlayerX += int(20.f * inputBuffer->ControllerInput[0].LeftStick.AverageX);
+  gameState->PlayerY -= int(20.f * inputBuffer->ControllerInput[0].LeftStick.AverageY);
+
   gameState->ToneHz = 1024.f + inputBuffer->ControllerInput[0].RightStick.AverageY * 768.f;
 
   if (inputBuffer->KeyboardInput.Key['A'].IsDown)
@@ -66,7 +94,7 @@ extern "C" void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer 
   }
 
   TempRenderWeirdGradient(offscreenBuffer, gameState->BlueOffset, gameState->GreenOffset);
-
+  RenderPlayer(gameMemory, offscreenBuffer, inputBuffer->ControllerInput[0].AButton.IsDown);
   //Todo: make this more complicated
 
   //Todo: make this more complicated
