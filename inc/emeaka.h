@@ -128,6 +128,7 @@ struct GameInputBuffer
 
 struct GameState
 {
+  float tSine;
   float ToneHz;
   int GreenOffset;
   int BlueOffset;
@@ -193,9 +194,3 @@ typedef GAME_UPDATE_AND_RENDER(GameUpdateAndRenderType);
 typedef GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesType);
 
 
-DebugFileResult PlatformReadEntireFile(char *filename);
-void PlatformFreeFileMemory(void *memory);
-bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *memory);
-internal void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks);
-internal void
-GameGetSoundSamples(GameMemory *gameMemory,  GameSoundBuffer *soundBuffer);

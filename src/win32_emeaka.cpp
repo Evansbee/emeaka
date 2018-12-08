@@ -9,7 +9,6 @@
 //your own includes
 #include "win32_emeaka.h"
 #include "emeaka.h"
-#include "emeaka.cpp"
 
 #define LOG(x) OutputDebugStringA(x)
 
@@ -184,6 +183,9 @@ internal void Win32InitDSound(HWND window, Win32SoundOuput *soundOutput)
 struct Win32GameFunctions
 {
    HMODULE GameLibrary;
+   char FileName[MAX_PATH];
+   char TempFileName[MAX_PATH];
+   FILETIME FileWriteTime;
    GameUpdateAndRenderType *GameUpdateAndRender;
    GameGetSoundSamplesType *GameGetSoundSamples;
 };
@@ -198,25 +200,69 @@ GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesStub)
    return;
 }
 
+internal void Win32MakeDLLFileNames(Win32GameFunctions *gameFunctions)
+{
+   char * dllName = "emeaka.dll";
+   char * tempDllName = "loaded_emeaka.dll";
+   gameFunctions->FileName[0] = '\0';
+   gameFunctions->TempFileName[0] = '\0';
+   if(GetModuleFileNameA(0,gameFunctions->FileName, MAX_PATH))
+   {
+      size_t idx = 0;
+      size_t after_last_slash_idx = 0;
+      for(; gameFunctions->FileName[idx] != '\0'; idx++ )
+      {
+         gameFunctions->TempFileName[idx] = gameFunctions->FileName[idx];
+         if(gameFunctions->FileName[idx] == '\\')
+         {
+            after_last_slash_idx = idx + 1;
+         }
+      }
+      gameFunctions->TempFileName[idx+1] = '\0';
+
+      for(idx = after_last_slash_idx; dllName[idx-after_last_slash_idx] != '\0'; ++idx)
+      {
+         gameFunctions->FileName[idx] = dllName[idx-after_last_slash_idx];
+      }
+      gameFunctions->FileName[idx] = '\0';
+      
+      for(idx = after_last_slash_idx; tempDllName[idx-after_last_slash_idx] != '\0'; ++idx)
+      {
+         gameFunctions->TempFileName[idx] = tempDllName[idx-after_last_slash_idx];
+      }
+      gameFunctions->TempFileName[idx] = '\0';
+   }
+}
+
 internal void Win32LoadGameDLL(Win32GameFunctions *gameFunctions)
 {
-   gameFunctions->GameLibrary = LoadLibraryA("emeaka.dll");
-   if (gameFunctions->GameLibrary)
+   bool setToDefault = true;
+   //copy file first
+   if(CopyFile(gameFunctions->FileName, gameFunctions->TempFileName, false))
    {
-      gameFunctions->GameUpdateAndRender =  (GameUpdateAndRenderType *)GetProcAddress(gameFunctions->GameLibrary, "GameUpdateAndRender");
-      gameFunctions->GameGetSoundSamples =  (GameGetSoundSamplesType *)GetProcAddress(gameFunctions->GameLibrary, "GameGetSoundSamples");
-
-      if(!gameFunctions->GameUpdateAndRender || !gameFunctions->GameGetSoundSamples)
+           
+      gameFunctions->GameLibrary = LoadLibraryA(gameFunctions->TempFileName);
+      if (gameFunctions->GameLibrary)
       {
-         gameFunctions->GameUpdateAndRender = GameUpdateAndRender;
-         gameFunctions->GameGetSoundSamples = GameGetSoundSamples;
+         gameFunctions->GameUpdateAndRender =  (GameUpdateAndRenderType *)GetProcAddress(gameFunctions->GameLibrary, "GameUpdateAndRender");
+         gameFunctions->GameGetSoundSamples =  (GameGetSoundSamplesType *)GetProcAddress(gameFunctions->GameLibrary, "GameGetSoundSamples");
+
+         if(gameFunctions->GameUpdateAndRender && gameFunctions->GameGetSoundSamples)
+         {
+            GET_FILEEX_INFO_LEVELS infoLevel = GetFileExInfoStandard;
+            WIN32_FILE_ATTRIBUTE_DATA fileData;
+            GetFileAttributesExA(gameFunctions->FileName,infoLevel, &fileData);
+            gameFunctions->FileWriteTime = fileData.ftLastWriteTime;
+            setToDefault = false;
+         }
       }
    }
 
-   if(!gameFunctions->GameLibrary || !gameFunctions->GameUpdateAndRender || !gameFunctions->GameGetSoundSamples)
+   //Do we need to protect for teh copy file as well...
+   if(setToDefault)
       {
-         gameFunctions->GameUpdateAndRender = GameUpdateAndRender;
-         gameFunctions->GameGetSoundSamples = GameGetSoundSamples;
+         gameFunctions->GameUpdateAndRender = GameUpdateAndRenderStub;
+         gameFunctions->GameGetSoundSamples = GameGetSoundSamplesStub;
       }
 }
 
@@ -227,6 +273,13 @@ internal void Win32UnloadGameDLL(Win32GameFunctions *gameFunctions)
 
 internal bool Win32GameDLLNeedsRefreshed(Win32GameFunctions *gameFunctions)
 {
+   GET_FILEEX_INFO_LEVELS infoLevel = GetFileExInfoStandard;
+   WIN32_FILE_ATTRIBUTE_DATA fileData;
+   GetFileAttributesExA(gameFunctions->FileName,infoLevel, &fileData);
+   if(CompareFileTime(&fileData.ftLastWriteTime,&gameFunctions->FileWriteTime) != 0)
+   {
+      return true;
+   }
    return false;
 }
 
@@ -236,6 +289,13 @@ void PlatformAssertFail(char * msg)
    __debugbreak();
 }
 
+void PlatformFreeFileMemory(void *memory)
+{
+   if (memory)
+   {
+      VirtualFree(memory, 0, MEM_RELEASE);
+   }
+}
 
 DebugFileResult PlatformReadEntireFile(char *filename)
 {
@@ -274,13 +334,7 @@ DebugFileResult PlatformReadEntireFile(char *filename)
    return fileReadResult;
 }
 
-void PlatformFreeFileMemory(void *memory)
-{
-   if (memory)
-   {
-      VirtualFree(memory, 0, MEM_RELEASE);
-   }
-}
+
 bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *memory)
 {
    HANDLE fileHandle = CreateFileA(filename, GENERIC_WRITE, 0, 0, CREATE_NEW, 0, 0);
@@ -838,6 +892,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
          gameMemory.PermanentStorage = VirtualAlloc(baseAddress, totalMemorySize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
          gameMemory.TransientStorage = (uint8_t *)gameMemory.PermanentStorage + gameMemory.PermanentStorageSize;
 
+         gameMemory.PlatformFunctions.PlatformFreeFileMemory = PlatformFreeFileMemory;
+         gameMemory.PlatformFunctions.PlatformReadEntireFile = PlatformReadEntireFile;
+         gameMemory.PlatformFunctions.PlatformWriteEntireFile = PlatformWriteEntireFile;
+
          gameMemory.IsInitialized = false;
 
          //sound test
@@ -865,7 +923,11 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
          //load up the game
          Win32GameFunctions win32GameFunctions = {};
+
+         Win32MakeDLLFileNames(&win32GameFunctions);
          Win32LoadGameDLL(&win32GameFunctions);
+
+         
 
 
          //random debug stuff
@@ -881,6 +943,11 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
          uint64_t lastCycleCount = __rdtsc();
          while (Running)
          {
+            if(Win32GameDLLNeedsRefreshed(&win32GameFunctions))
+            {
+               Win32UnloadGameDLL(&win32GameFunctions);
+               Win32LoadGameDLL(&win32GameFunctions);
+            }
             //win32 only needs current since we're going to get teh transition information from windows...
             Win32PrepareInputBuffers(currentInputBuffer, lastInputBuffer);
             Win32ProcessWindowMessages(window, currentInputBuffer);
