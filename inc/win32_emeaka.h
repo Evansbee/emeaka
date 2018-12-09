@@ -62,6 +62,11 @@ struct Win32RecordingInformation
 struct Win32State
 {
    GameRecordingState RecordingState;
+   size_t RecordingWriteIndex;
+   size_t RecordingPlayIndex;
+   size_t RecordingSamples;
+   HANDLE RecordingFileHandle;
+   HANDLE ReplayFileHandle;
 };
 
 //mapped in font is 6x13 -- a single unsigned char holds a ROW of font data.  

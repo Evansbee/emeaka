@@ -80,6 +80,40 @@ Win32DebugDrawVertical(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t
 }
 
 internal void
+Win32DebugDrawCircle(Win32OffscreenBuffer *offscreenBuffer, int32_t x0, int32_t y0, int32_t radius, uint8_t r, uint8_t g, uint8_t b)
+{
+   int x = radius - 1;
+   int y = 0;
+   int dx = 1;
+   int dy = 1;
+   int err = dx - (radius << 1);
+   while(x>=y)
+   {
+      Win32Plot(offscreenBuffer, x0+x, y0+y, RGB_TO_UINT32(r,g,b));
+      Win32Plot(offscreenBuffer, x0+y, y0+x, RGB_TO_UINT32(r,g,b));
+      Win32Plot(offscreenBuffer, x0-y, y0+x, RGB_TO_UINT32(r,g,b));
+      Win32Plot(offscreenBuffer, x0-x, y0+y, RGB_TO_UINT32(r,g,b));
+      Win32Plot(offscreenBuffer, x0-x, y0-y, RGB_TO_UINT32(r,g,b));
+      Win32Plot(offscreenBuffer, x0-y, y0-x, RGB_TO_UINT32(r,g,b));
+      Win32Plot(offscreenBuffer, x0+y, y0-x, RGB_TO_UINT32(r,g,b));
+      Win32Plot(offscreenBuffer, x0+x, y0-y, RGB_TO_UINT32(r,g,b));
+      
+      if(err <= 0)
+      {
+         y++;
+         err += dy;
+         dy += 2;
+      }
+      if(err>0)
+      {
+         x--;
+         dx+=2;
+         err += dx - (radius<<1);
+      }
+   }
+}
+
+internal void
 Win32DebugDrawCharacter(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, char c,uint32_t color ,bool shadow)
 {
    for(int plot_y = 0; plot_y < Win32FixedFontHeight; ++plot_y)

@@ -133,38 +133,40 @@ GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesStub)
    return;
 }
 
+
+internal void Win32MakeFilenameInExeDirectory(char *fileName, char* pathBuffer, DWORD pathBufferLen)
+{
+   if(GetModuleFileNameA(0,pathBuffer, pathBufferLen))
+   {
+      size_t idx = 0;
+      size_t after_last_slash_idx = 0;
+      for(; pathBuffer[idx] != '\0'; idx++ )
+      {
+         if(pathBuffer[idx] == '\\')
+         {
+            after_last_slash_idx = idx + 1;
+         }
+      }
+      pathBuffer[idx+1] = '\0';
+
+      for(idx = after_last_slash_idx; fileName[idx-after_last_slash_idx] != '\0'; ++idx)
+      {
+         pathBuffer[idx] = fileName[idx-after_last_slash_idx];
+      }
+      pathBuffer[idx] = '\0';
+   }
+}
+
+
 internal void Win32MakeDLLFileNames(Win32GameFunctions *gameFunctions)
 {
    char * dllName = "emeaka.dll";
    char * tempDllName = "loaded_emeaka.dll";
    gameFunctions->FileName[0] = '\0';
    gameFunctions->TempFileName[0] = '\0';
-   if(GetModuleFileNameA(0,gameFunctions->FileName, MAX_PATH))
-   {
-      size_t idx = 0;
-      size_t after_last_slash_idx = 0;
-      for(; gameFunctions->FileName[idx] != '\0'; idx++ )
-      {
-         gameFunctions->TempFileName[idx] = gameFunctions->FileName[idx];
-         if(gameFunctions->FileName[idx] == '\\')
-         {
-            after_last_slash_idx = idx + 1;
-         }
-      }
-      gameFunctions->TempFileName[idx+1] = '\0';
-
-      for(idx = after_last_slash_idx; dllName[idx-after_last_slash_idx] != '\0'; ++idx)
-      {
-         gameFunctions->FileName[idx] = dllName[idx-after_last_slash_idx];
-      }
-      gameFunctions->FileName[idx] = '\0';
-      
-      for(idx = after_last_slash_idx; tempDllName[idx-after_last_slash_idx] != '\0'; ++idx)
-      {
-         gameFunctions->TempFileName[idx] = tempDllName[idx-after_last_slash_idx];
-      }
-      gameFunctions->TempFileName[idx] = '\0';
-   }
+   Win32MakeFilenameInExeDirectory("emeaka.dll", gameFunctions->FileName, MAX_PATH);
+   Win32MakeFilenameInExeDirectory("loaded_emeaka.dll", gameFunctions->TempFileName, MAX_PATH);
+   return;
 }
 
 internal void Win32LoadGameDLL(Win32GameFunctions *gameFunctions)
@@ -292,6 +294,19 @@ bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *memory)
    }
 }
 
+internal void Win32ProcessMouseInput(HWND window, GameInputBuffer *inputBuffer)
+{
+   POINT cursorPos;
+   GetCursorPos(&cursorPos);
+   ScreenToClient(window, &cursorPos);
+   Win32WindowDimensions windowDims= GetWin32WindowDimensions(window);
+   
+   inputBuffer->MouseInput.MouseLocationX = (float)cursorPos.x / (float)windowDims.Width;
+   inputBuffer->MouseInput.MouseLocationY = (float)cursorPos.y / (float)windowDims.Height;
+   inputBuffer->MouseInput.MouseInWindow = (inputBuffer->MouseInput.MouseLocationX >= 0.f && inputBuffer->MouseInput.MouseLocationX <= 1.0f && 
+                                            inputBuffer->MouseInput.MouseLocationY >= 0.f && inputBuffer->MouseInput.MouseLocationY <= 1.0f);
+}
+
 
 internal void Win32ProcessWindowMessages(HWND window, GameInputBuffer *inputBuffer)
 {
@@ -301,6 +316,42 @@ internal void Win32ProcessWindowMessages(HWND window, GameInputBuffer *inputBuff
       if (message.message == WM_QUIT)
       {
          Running = false;
+      }
+      else if (message.message == WM_LBUTTONDOWN)
+      {
+         
+         inputBuffer->MouseInput.MouseButton[0].IsDown = true;
+         inputBuffer->MouseInput.MouseButton[0].HalfTransitions = 1;
+      }
+      else if (message.message == WM_MBUTTONDOWN)
+      {
+         
+         inputBuffer->MouseInput.MouseButton[1].IsDown = true;
+         inputBuffer->MouseInput.MouseButton[1].HalfTransitions = 1;
+      }
+      else if (message.message == WM_RBUTTONDOWN)
+      {
+         
+         inputBuffer->MouseInput.MouseButton[2].IsDown = true;
+         inputBuffer->MouseInput.MouseButton[2].HalfTransitions = 1;
+      }
+      else if (message.message == WM_LBUTTONUP)
+      {
+         
+         inputBuffer->MouseInput.MouseButton[0].IsDown = false;
+         inputBuffer->MouseInput.MouseButton[0].HalfTransitions = 1;
+      }
+      else if (message.message == WM_MBUTTONUP)
+      {
+         
+         inputBuffer->MouseInput.MouseButton[1].IsDown = false;
+         inputBuffer->MouseInput.MouseButton[1].HalfTransitions = 1;
+      }
+      else if (message.message == WM_RBUTTONUP)
+      {
+         
+         inputBuffer->MouseInput.MouseButton[2].IsDown = false;
+         inputBuffer->MouseInput.MouseButton[2].HalfTransitions = 1;
       }
       else if (message.message == WM_SYSKEYDOWN ||
                message.message == WM_SYSKEYUP ||
@@ -487,6 +538,9 @@ internal void Win32ProcessGamepadInput(XINPUT_GAMEPAD *gamepad, size_t controlle
 
    currentInputBuffer->ControllerInput[controllerIndex].RightTrigger = RightTriggerNormalized;
    currentInputBuffer->ControllerInput[controllerIndex].LeftTrigger = LeftTriggerNormalized;
+
+
+
 }
 
 internal void
@@ -513,6 +567,11 @@ Win32PrepareInputBuffers(GameInputBuffer *currentInputBuffer, GameInputBuffer *l
    currentInputBuffer->MouseInput.MouseInWindow = lastInputBuffer->MouseInput.MouseInWindow;
    currentInputBuffer->MouseInput.MouseLocationX = lastInputBuffer->MouseInput.MouseLocationX;
    currentInputBuffer->MouseInput.MouseLocationY = lastInputBuffer->MouseInput.MouseLocationY;
+
+   for(int i = 0; i < 5; ++i)
+   {
+      currentInputBuffer->MouseInput.MouseButton[i].IsDown = lastInputBuffer->MouseInput.MouseButton[i].IsDown;
+   }
 }
 
 internal void Win32DebugSyncDisplay(Win32OffscreenBuffer *offscreenBuffer, size_t markerCount, Win32DebugTimeMarker *markers, size_t currentMarker, Win32SoundOuput *soundOutputBuffer, float secondsPerFrame)
@@ -553,10 +612,59 @@ internal void Win32DebugSyncDisplay(Win32OffscreenBuffer *offscreenBuffer, size_
       
    }
    Win32DebugDrawText(offscreenBuffer, 400, 400, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n1234567890\n!@#$%^&*()_-=+~`,./?><;'\":[]\\|}{}",255, 255, 255, true);
-
 }
 
+#define RECORDING_FILE_NAME ("emeaka_replay.ein")
+internal void Win32BeginRecordingInput(Win32State *win32State, GameMemory *gameMemory)
+{
+   DWORD bytesWritten = 0;
+   char recordingFileName[MAX_PATH];
+   Win32MakeFilenameInExeDirectory(RECORDING_FILE_NAME, recordingFileName, MAX_PATH);
+   win32State->RecordingFileHandle = CreateFileA(recordingFileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+   WriteFile(win32State->RecordingFileHandle, gameMemory->PermanentStorage, (DWORD)gameMemory->PermanentStorageSize, &bytesWritten, 0);
+   WriteFile(win32State->RecordingFileHandle, gameMemory->TransientStorage, (DWORD)gameMemory->TransientStorageSize, &bytesWritten, 0);
+   win32State->RecordingPlayIndex = 0;
+   win32State->RecordingWriteIndex = 0;
+   win32State->RecordingSamples = 0;
+}
 
+internal void Win32EndRecordingInput(Win32State *win32State)
+{
+   CloseHandle(win32State->RecordingFileHandle);
+}
+
+internal bool Win32BeginPlaybackInput(Win32State *win32State, GameMemory *gameMemory)
+{
+   DWORD bytesRead = 0;
+   char recordingFileName[MAX_PATH];
+   Win32MakeFilenameInExeDirectory(RECORDING_FILE_NAME, recordingFileName, MAX_PATH);
+   win32State->ReplayFileHandle = CreateFileA(recordingFileName, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
+   ReadFile(win32State->ReplayFileHandle, gameMemory->PermanentStorage, (DWORD)gameMemory->PermanentStorageSize,&bytesRead, 0);
+   ReadFile(win32State->ReplayFileHandle, gameMemory->TransientStorage, (DWORD)gameMemory->TransientStorageSize,&bytesRead, 0);
+
+   return (win32State->ReplayFileHandle != NULL);
+}
+
+internal void Win32EndPlaybackInput(Win32State *win32State)
+{
+   CloseHandle(win32State->ReplayFileHandle);
+}
+
+internal void
+Win32RecordInput(Win32State *win32State, GameInputBuffer *inputBuffer)
+{
+   DWORD bytesWritten;
+   WriteFile(win32State->RecordingFileHandle,inputBuffer, sizeof(GameInputBuffer),&bytesWritten,0);
+   win32State->RecordingSamples++;
+}
+
+internal void
+Win32PlayInput(Win32State *win32State, GameInputBuffer *inputBuffer)
+{
+   DWORD bytesRead;
+   ReadFile(win32State->ReplayFileHandle,inputBuffer, sizeof(GameInputBuffer),&bytesRead,0); 
+   win32State->RecordingPlayIndex = (win32State->RecordingPlayIndex+1) % win32State->RecordingSamples;
+}
 
 
 internal inline float Win32GetSecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end)
@@ -591,10 +699,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
    LARGE_INTEGER preFlipTime;
    LARGE_INTEGER endFrameTime;
 
-   UINT desiredSchedulerMS = 1;
-   bool sleepIsGranular = (TIMERR_NOERROR == timeBeginPeriod(desiredSchedulerMS));
+   bool sleepIsGranular = (TIMERR_NOERROR == timeBeginPeriod(1));
 
    GameClocks gameClocks = {};
+   Win32State win32State =  {};
 
    GameRecordingState recordingState = InputNormal;
 
@@ -631,8 +739,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
    windowClass.lpszClassName = "emeakaWindowClass";
    windowClass.hIconSm = LoadIcon(windowClass.hInstance, IDI_APPLICATION);
 
-   size_t recordingIndex = 0;
-   size_t playbackIndex = 0;
 
    if (RegisterClassExA(&windowClass))
    {
@@ -663,10 +769,15 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
          baseAddress = (LPVOID)TeraBytes(2);
 #endif
          GameMemory gameMemory;
-         gameMemory.PermanentStorageSize = MegaBytes(64);
-         gameMemory.TransientStorageSize = GigaBytes(4);
+         gameMemory.PermanentStorageSize = MegaBytes(16);
+         gameMemory.TransientStorageSize = MegaBytes(64);
 
+//         size_t largePageMin = GetLargePageMinimum();
          size_t totalMemorySize = gameMemory.PermanentStorageSize + gameMemory.TransientStorageSize;
+         // totalMemorySize += (totalMemorySize % largePageMin);
+         // gameMemory.TransientStorageSize = totalMemorySize - gameMemory.PermanentStorageSize;
+
+
          gameMemory.PermanentStorage = VirtualAlloc(baseAddress, totalMemorySize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
          gameMemory.TransientStorage = (uint8_t *)gameMemory.PermanentStorage + gameMemory.PermanentStorageSize;
 
@@ -741,28 +852,41 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                }
             }
 
+            Win32ProcessMouseInput(window, currentInputBuffer);
+
             inputCompleteTime = Win32GetPerformanceCounter();
 
-            if(currentInputBuffer->KeyboardInput.Key['R'].IsDown && currentInputBuffer->KeyboardInput.Key['R'].HalfTransitions > 0 && recordingState == InputNormal)
+            if(currentInputBuffer->KeyboardInput.Key['R'].IsDown && currentInputBuffer->KeyboardInput.Key['R'].HalfTransitions > 0 && win32State.RecordingState == InputNormal)
             {
-               recordingState = InputRecording;
+               win32State.RecordingState = InputRecording;
+               Win32BeginRecordingInput(&win32State, &gameMemory);
+               //get file junk ready
             }
-            else if(currentInputBuffer->KeyboardInput.Key['R'].IsDown && currentInputBuffer->KeyboardInput.Key['R'].HalfTransitions > 0 && recordingState == InputRecording)
+            else if(currentInputBuffer->KeyboardInput.Key['R'].IsDown && currentInputBuffer->KeyboardInput.Key['R'].HalfTransitions > 0 && win32State.RecordingState == InputRecording)
             {
-              recordingState = InputPlaying;
+               //close up the file
+              Win32EndRecordingInput(&win32State);
+              win32State.RecordingState = InputPlaying;
             }
             else if(currentInputBuffer->KeyboardInput.Key['R'].IsDown && currentInputBuffer->KeyboardInput.Key['R'].HalfTransitions > 0 )
             {
-              recordingState = InputNormal;
+               Win32EndPlaybackInput(&win32State);
+              win32State.RecordingState = InputNormal;
             }
 
 
-            if(recordingState == InputRecording)
+            if(win32State.RecordingState == InputRecording)
             {
-
-            } else if (recordingState == InputPlaying)
+               Win32RecordInput(&win32State, currentInputBuffer);
+            } 
+            else if (win32State.RecordingState == InputPlaying)
             {
-
+               if(win32State.RecordingPlayIndex == 0)
+               {
+                  Win32EndPlaybackInput(&win32State); //this refreshes the memory
+                  Win32BeginPlaybackInput(&win32State, &gameMemory);
+               }
+               Win32PlayInput(&win32State, currentInputBuffer);
             }
           
             //**************************************************************************
@@ -803,7 +927,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                   safeWriteCursor += win32SoundOutput.BufferSize;
                }
 
-               bool audioIsLowLatency = (safeWriteCursor < expectedFrameEnd);
+               bool audioIsLowLatency = bool(safeWriteCursor < expectedFrameEnd);
 
                DWORD targetCursor = 0;
 
@@ -898,12 +1022,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             lastInputBuffer = tempInputBuffer;
 
             
-         
-            if(recordingState == InputNormal)
+            Win32DebugDrawCircle(&OffscreenBuffer, 250,250,32,123,43,2);
+            if(win32State.RecordingState == InputNormal)
             {
                Win32DebugDrawText(&OffscreenBuffer, 16,windowDimensions.Height - Win32FixedFontAscent - 16, "Input: Normal",255,255,255,true);
             }
-            else if(recordingState == InputRecording)
+            else if(win32State.RecordingState == InputRecording)
             {
                Win32DebugDrawText(&OffscreenBuffer,  16,windowDimensions.Height - Win32FixedFontAscent - 16,"Input: Recording",255,0,0,true);
             }
@@ -911,7 +1035,18 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             {
                Win32DebugDrawText(&OffscreenBuffer,  16,windowDimensions.Height - Win32FixedFontAscent - 16,"Input: Playing",0,255,0,true);
             }
-            
+
+            char mouseInfo[255];
+            snprintf(mouseInfo,255,"Mouse X: %0.4f Mouse Y: %0.4f",lastInputBuffer->MouseInput.MouseLocationX, lastInputBuffer->MouseInput.MouseLocationY);
+            if(lastInputBuffer->MouseInput.MouseInWindow)
+            {
+               Win32DebugDrawText(&OffscreenBuffer, 16,windowDimensions.Height - Win32FixedFontAscent - 16 - Win32FixedFontHeight, mouseInfo,0,255,0,true);
+            }
+            else
+            {
+               Win32DebugDrawText(&OffscreenBuffer, 16,windowDimensions.Height - Win32FixedFontAscent - 16 - Win32FixedFontHeight, mouseInfo,255,0,0,true);
+            }
+          
 
             preFlipTime = Win32GetPerformanceCounter();
 

@@ -94,7 +94,7 @@ extern "C" void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer 
   }
 
   TempRenderWeirdGradient(offscreenBuffer, gameState->BlueOffset, gameState->GreenOffset);
-  RenderPlayer(gameMemory, offscreenBuffer, inputBuffer->ControllerInput[0].AButton.IsDown);
+  RenderPlayer(gameMemory, offscreenBuffer, inputBuffer->MouseInput.LeftButton.IsDown);
   //Todo: make this more complicated
 
   //Todo: make this more complicated

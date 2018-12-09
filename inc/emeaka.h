@@ -113,9 +113,15 @@ struct GameMouseInput
   float MouseLocationY;
   float WheelDelta;
 
-  GameButtonState LeftButton;
-  GameButtonState RightButton;
-  GameButtonState MiddleButton;
+  union{
+    GameButtonState MouseButton[5];
+    struct
+    {
+      GameButtonState LeftButton;
+      GameButtonState RightButton;
+      GameButtonState MiddleButton;
+    };
+  };  
 };
 
 struct GameInputBuffer
