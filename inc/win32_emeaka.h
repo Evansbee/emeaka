@@ -4,6 +4,8 @@
 #include <Windows.h>
 #include <dsound.h>
 
+#include "emeaka.h"
+
 struct Win32OffscreenBuffer
 {
    void *Memory;
@@ -42,6 +44,24 @@ struct Win32DebugTimeMarker
    DWORD ExpectedFlipPlayCursor;
    DWORD FlipPlayCursor;
    DWORD FlipWriteCursor;
+};
+
+enum GameRecordingState : int
+{
+   InputNormal = 0,
+   InputRecording,
+   InputPlaying,
+};
+
+struct Win32RecordingInformation
+{
+   GameInputBuffer *InputStream;
+   size_t InputCount;
+};
+
+struct Win32State
+{
+   GameRecordingState RecordingState;
 };
 
 //mapped in font is 6x13 -- a single unsigned char holds a ROW of font data.  

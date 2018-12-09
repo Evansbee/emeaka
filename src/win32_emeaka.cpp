@@ -10,6 +10,10 @@
 #include "win32_emeaka.h"
 #include "emeaka.h"
 
+//includes for unity building...
+#include "win32_emeaka_sound.cpp"
+#include "win32_emeaka_graphics.cpp"
+
 #define LOG(x) OutputDebugStringA(x)
 
 //GLOBALS
@@ -107,78 +111,7 @@ internal void Win32LoadXInput(void)
 
 //direct sound
 
-#define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
-typedef DIRECT_SOUND_CREATE(DirectSoundCreateType);
-
-internal void Win32InitDSound(HWND window, Win32SoundOuput *soundOutput)
-{
-   //Load
-   HMODULE dSoundLib = LoadLibraryA("dsound.dll");
-   if (dSoundLib)
-   {
-      DirectSoundCreateType *DirectSoundCreateLocal = (DirectSoundCreateType *)GetProcAddress(dSoundLib, "DirectSoundCreate");
-      LPDIRECTSOUND directSound;
-      if (DirectSoundCreateLocal && SUCCEEDED(DirectSoundCreateLocal(0, &directSound, 0)))
-      {
-         WAVEFORMATEX waveFormat = {};
-         waveFormat.wFormatTag = WAVE_FORMAT_PCM;
-         waveFormat.nChannels = (WORD)soundOutput->Channels;
-         waveFormat.wBitsPerSample = 16;
-         waveFormat.nSamplesPerSec = soundOutput->SamplesPerSecond;
-         waveFormat.nBlockAlign = waveFormat.nChannels * waveFormat.wBitsPerSample / 8;
-         waveFormat.nAvgBytesPerSec = waveFormat.nBlockAlign * waveFormat.nSamplesPerSec;
-
-         if (SUCCEEDED(directSound->SetCooperativeLevel(window, DSSCL_PRIORITY)))
-         {
-            LPDIRECTSOUNDBUFFER primaryBuffer;
-            DSBUFFERDESC bufferDescription = {};
-            bufferDescription.dwSize = sizeof(DSBUFFERDESC);
-            bufferDescription.dwFlags = DSBCAPS_PRIMARYBUFFER;
-
-            if (SUCCEEDED(directSound->CreateSoundBuffer(&bufferDescription, &primaryBuffer, 0)))
-            {
-               HRESULT error = primaryBuffer->SetFormat(&waveFormat);
-               if (SUCCEEDED(error))
-               {
-                  OutputDebugStringA("Primary Buffer Created\n");
-               }
-
-               else
-               {
-                  LOG("Failed to allocate primary buffer for DirectSound");
-               }
-            }
-         }
-         else
-         {
-            LOG("Failed to set coooperative level for directsound");
-         }
-
-         DSBUFFERDESC bufferDescription = {};
-         bufferDescription.dwSize = sizeof(DSBUFFERDESC);
-         bufferDescription.dwBufferBytes = soundOutput->BufferSize;
-         bufferDescription.lpwfxFormat = &waveFormat;
-
-         HRESULT error = directSound->CreateSoundBuffer(&bufferDescription, &soundOutput->SoundBuffer, 0);
-         if (SUCCEEDED(error))
-         {
-            OutputDebugStringA("Secondary Buffer Created\n");
-         }
-         else
-         {
-            LOG("Failed to create secondary buffer");
-         }
-      }
-   }
-   else
-   {
-      LOG("Failed to load DirectSound");
-   }
-}
 //end dsound
-
-
-
 
 struct Win32GameFunctions
 {
@@ -359,55 +292,6 @@ bool PlatformWriteEntireFile(char *filename, size_t memorySize, void *memory)
    }
 }
 
-internal Win32WindowDimensions GetWin32WindowDimensions(HWND window)
-{
-   RECT clientRect;
-   Win32WindowDimensions windowDimensions;
-   GetClientRect(window, &clientRect);
-   windowDimensions.Width = clientRect.right - clientRect.left;
-   windowDimensions.Height = clientRect.bottom - clientRect.top;
-   return windowDimensions;
-}
-
-internal void Win32ResizeDIBSection(Win32OffscreenBuffer *Buffer, int width, int height) //Device Independent Bitmap
-{
-   if (Buffer->Memory)
-   {
-      VirtualFree(Buffer->Memory, 0, MEM_RELEASE);
-   }
-
-   Buffer->Width = width;
-   Buffer->Height = height;
-   Buffer->BytesPerPixel = 4;
-   Buffer->Pitch = Buffer->Width * Buffer->BytesPerPixel;
-   Buffer->Info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-   Buffer->Info.bmiHeader.biWidth = Buffer->Width;
-   Buffer->Info.bmiHeader.biHeight = -Buffer->Height;
-   Buffer->Info.bmiHeader.biPlanes = 1;
-   Buffer->Info.bmiHeader.biBitCount = 32;
-   Buffer->Info.bmiHeader.biCompression = BI_RGB;
-
-   int bitmapMemorySize = Buffer->BytesPerPixel * Buffer->Width * Buffer->Height;
-   Buffer->Memory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
-   ZeroMemory(Buffer->Memory, bitmapMemorySize);
-}
-
-internal void Win32DisplayBufferInWindow(HDC deviceContext, int windowWidth, int windowHeight, Win32OffscreenBuffer *Buffer, int x, int y, int width, int height)
-{
-   //bufferRatio = buffer->Width / Buffer->Height;
-
-   StretchDIBits(
-       deviceContext,
-       //x, y, width, height,
-       //x, y, width, height,
-       0, 0, windowWidth, windowHeight,
-       0, 0, Buffer->Width, Buffer->Height,
-
-       Buffer->Memory,
-       &Buffer->Info,
-       DIB_RGB_COLORS,
-       SRCCOPY);
-}
 
 internal void Win32ProcessWindowMessages(HWND window, GameInputBuffer *inputBuffer)
 {
@@ -479,6 +363,7 @@ internal void Win32ProcessWindowMessages(HWND window, GameInputBuffer *inputBuff
       }
    }
 }
+
 LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
 {
    switch (message)
@@ -629,121 +514,7 @@ Win32PrepareInputBuffers(GameInputBuffer *currentInputBuffer, GameInputBuffer *l
    currentInputBuffer->MouseInput.MouseLocationX = lastInputBuffer->MouseInput.MouseLocationX;
    currentInputBuffer->MouseInput.MouseLocationY = lastInputBuffer->MouseInput.MouseLocationY;
 }
-internal void Win32ClearSoundBuffer(Win32SoundOuput *soundOutput)
-{
-   int32_t *soundBuffer1;
-   int32_t *soundBuffer2;
-   DWORD soundBuffer1Size;
-   DWORD soundBuffer2Size;
 
-   if (SUCCEEDED(soundOutput->SoundBuffer->Lock(0, soundOutput->SamplesPerSecond, &(void *)soundBuffer1, &soundBuffer1Size, &(void *)soundBuffer2, &soundBuffer2Size, 0)))
-   {
-      for (DWORD i = 0; i < soundBuffer1Size; ++i)
-      {
-         soundBuffer1[i] = 0;
-         soundOutput->RunningSampleIndex++;
-      }
-      for (DWORD i = 0; i < soundBuffer2Size; ++i)
-      {
-         soundBuffer2[i] = 0;
-         soundOutput->RunningSampleIndex++;
-      }
-      soundOutput->SoundBuffer->Unlock(soundBuffer1, soundBuffer1Size, soundBuffer2, soundBuffer2Size);
-   }
-}
-
-internal void Win32FillSoundBuffer(Win32SoundOuput *soundOutput, DWORD byteToLock, DWORD bytesToWrite, GameSoundBuffer *sourceBuffer)
-{
-   int32_t *soundBuffer1;
-   int32_t *soundBuffer2;
-   DWORD soundBuffer1Size;
-   DWORD soundBuffer2Size;
-   if (SUCCEEDED(soundOutput->SoundBuffer->Lock(byteToLock, bytesToWrite, &(void *)soundBuffer1, &soundBuffer1Size, &(void *)soundBuffer2, &soundBuffer2Size, 0)))
-   {
-      int32_t *srcSample = (int32_t *)sourceBuffer->SampleBuffer;
-      DWORD bank1SampleCount = soundBuffer1Size / 4; //) soundOutput->BytesPerSample;
-      DWORD bank2SampleCount = soundBuffer2Size / 4; // soundOutput->BytesPerSample;
-      for (DWORD srcSampleIndex = 0; srcSampleIndex < sourceBuffer->SampleCount && srcSampleIndex < bank1SampleCount + bank2SampleCount; srcSampleIndex++)
-      {
-
-         if (srcSampleIndex < bank1SampleCount)
-         {
-            soundBuffer1[srcSampleIndex] = srcSample[srcSampleIndex];
-         }
-         else
-         {
-            int destSample = srcSampleIndex - bank1SampleCount;
-            soundBuffer2[destSample] = srcSample[srcSampleIndex];
-         }
-         soundOutput->RunningSampleIndex++;
-      }
-      soundOutput->SoundBuffer->Unlock(soundBuffer1, soundBuffer1Size, soundBuffer2, soundBuffer2Size);
-   }
-}
-
-internal void
-Win32DebugDrawLine(Win32OffscreenBuffer *offscreenBuffer, int32_t startx, int32_t starty, int32_t endx, int32_t endy, uint8_t r, uint8_t g, uint8_t b)
-{
-   //do a thing
-}
-
-internal inline void Win32Plot(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, uint32_t color)
-{
-   if(x >= 0 && x < offscreenBuffer->Width && y >= 0 && y < offscreenBuffer->Height)
-   {
-      ((uint32_t *)(offscreenBuffer->Memory))[(y * offscreenBuffer->Width) + x] = color;
-   }
-}
-
-internal void
-Win32DebugDrawVertical(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, int32_t height, uint8_t r, uint8_t g, uint8_t b)
-{
-   for(int32_t cur_y = y; cur_y < y + height; cur_y++)
-   {
-      Win32Plot(offscreenBuffer, x, cur_y, RGB_TO_UINT32(r,g,b));
-   }
-}
-
-internal void
-Win32DebugDrawCharacter(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, char c,uint32_t color ,bool shadow)
-{
-   for(int plot_y = 0; plot_y < Win32FixedFontHeight; ++plot_y)
-   {
-      for(int plot_x = 0; plot_x < Win32FixedFontWidth; ++plot_x)
-      {
-         if((Win32FixedFont[c][plot_y] & (1 << (8-plot_x))) > 0)
-         {
-            Win32Plot(offscreenBuffer, x + plot_x, y + plot_y , color);
-            if(shadow)
-            {
-               Win32Plot(offscreenBuffer, x + plot_x + 1, y + plot_y + 1 , 0);
-            }
-         }
-      }
-   }
-}
-
-
-internal void
-Win32DebugDrawText(Win32OffscreenBuffer *offscreenBuffer, int32_t x, int32_t y, char* string,uint8_t r, uint8_t g, uint8_t b,bool shadow)
-{
-   uint32_t current_x = x;
-   uint32_t current_y = y;
-   uint32_t color = RGB_TO_UINT32(r,g,b);
-   for(char* c = string; *c != '\0'; ++c)
-   {
-      if(*c =='\n')
-      {
-         current_y += Win32FixedFontYAdvance;
-         current_x = x;
-      }
-      else
-      {
-		  Win32DebugDrawCharacter(offscreenBuffer,current_x, current_y, *c, color, shadow);
-		  current_x += Win32FixedFontXAdvance;
-      }
-   }
-} 
 internal void Win32DebugSyncDisplay(Win32OffscreenBuffer *offscreenBuffer, size_t markerCount, Win32DebugTimeMarker *markers, size_t currentMarker, Win32SoundOuput *soundOutputBuffer, float secondsPerFrame)
 {
    int padx = 16;
@@ -801,12 +572,7 @@ internal inline LARGE_INTEGER Win32GetPerformanceCounter()
    return counter;
 }
 
-enum GameRecordingState
-{
-   InputNormal,
-   InputRecording,
-   InputPlaying,
-};
+
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLine, int showCode)
 {
@@ -865,7 +631,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
    windowClass.lpszClassName = "emeakaWindowClass";
    windowClass.hIconSm = LoadIcon(windowClass.hInstance, IDI_APPLICATION);
 
-   
+   size_t recordingIndex = 0;
+   size_t playbackIndex = 0;
 
    if (RegisterClassExA(&windowClass))
    {
