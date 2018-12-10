@@ -20,7 +20,7 @@ internal void TempRenderWeirdGradient(GameOffscreenBuffer *offscreenBuffer, int 
 
 internal void TempComposeSineWave(GameSoundBuffer *soundBuffer, float *tSine, float toneHz)
 {
-  int16_t toneVolume = 0;
+  int16_t toneVolume = 1000;
   float wavePeriod = ((float)soundBuffer->SamplesPerSecond / (float)toneHz);
   int16_t *sample_out = soundBuffer->SampleBuffer;
   //DWORD soundBuffer1SampleCount = soundBuffer1Size / soundOutput->BytesPerSample;
@@ -58,7 +58,7 @@ internal void RenderPlayer(GameMemory *gameMemory, GameOffscreenBuffer *offscree
   }
 }
 
-extern "C" void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
+extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
 {
   Assert(sizeof(GameState) <= gameMemory->PermanentStorageSize, "Permanent Storage Inadequate");
 
@@ -66,11 +66,11 @@ extern "C" void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer 
   if (!gameMemory->IsInitialized)
   {
     char *filename = "test.png";
-    DebugFileResult fileReadResult = gameMemory->PlatformFunctions.PlatformReadEntireFile(filename);
+    DebugFileResult fileReadResult = gameMemory->PlatformFunctions.PlatformReadEntireFile(threadContext,filename);
     if (fileReadResult.Contents)
     {
-      gameMemory->PlatformFunctions.PlatformWriteEntireFile("test2.png", fileReadResult.FileSize, fileReadResult.Contents);
-      gameMemory->PlatformFunctions.PlatformFreeFileMemory(fileReadResult.Contents);
+      gameMemory->PlatformFunctions.PlatformWriteEntireFile(threadContext,"test2.png", fileReadResult.FileSize, fileReadResult.Contents);
+      gameMemory->PlatformFunctions.PlatformFreeFileMemory(threadContext,fileReadResult.Contents);
     }
     //why is this a bad idea?
     gameState->tSine = 0.f;
@@ -101,7 +101,7 @@ extern "C" void GameUpdateAndRender(GameMemory *gameMemory, GameOffscreenBuffer 
   //GameOutputSound(int sampleCount, soundBuffer)
 }
 
-extern "C" void GameGetSoundSamples(GameMemory *gameMemory, GameSoundBuffer *soundBuffer)
+extern "C" void GameGetSoundSamples(ThreadContext *threadContext, GameMemory *gameMemory, GameSoundBuffer *soundBuffer)
 {
   GameState *gameState = (GameState *)gameMemory->PermanentStorage;
   TempComposeSineWave(soundBuffer, &gameState->tSine, gameState->ToneHz);

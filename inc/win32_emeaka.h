@@ -23,7 +23,6 @@ struct Win32SoundOuput
    int BytesPerSample;
    int Channels;
    int BufferSize;
-   int LatencySampleCount;
    int SafetyBytes;
    LPDIRECTSOUNDBUFFER SoundBuffer;
 };
@@ -53,20 +52,31 @@ enum GameRecordingState : int
    InputPlaying,
 };
 
-struct Win32RecordingInformation
+enum KeyboardSequenceState : int
 {
-   GameInputBuffer *InputStream;
-   size_t InputCount;
+   SequenceInactive,
+   SequenceAwatingRecordingNumber,
+   SequenceAwatingPlaybackNumber
 };
 
+struct Win32RecordingInformation
+{
+   HANDLE FileHandle;
+   HANDLE MemoryMap;
+   void *StoredGameMemory;
+   char ReplayFileName[MAX_PATH];
+};
+
+#define MAX_REPLAY_BUFFERS (1)
 struct Win32State
 {
-   GameRecordingState RecordingState;
-   size_t RecordingWriteIndex;
-   size_t RecordingPlayIndex;
-   size_t RecordingSamples;
-   HANDLE RecordingFileHandle;
-   HANDLE ReplayFileHandle;
+   Win32RecordingInformation ReplayBuffers[MAX_REPLAY_BUFFERS];
+   GameRecordingState RecordingState[MAX_REPLAY_BUFFERS];
+   void *GameMemory;
+   size_t GameMemorySize;
+   KeyboardSequenceState KeySequenceState;
+   //HANDLE RecordingFileHandle;
+   //HANDLE ReplayFileHandle;
 };
 
 //mapped in font is 6x13 -- a single unsigned char holds a ROW of font data.  

@@ -165,14 +165,19 @@ struct DebugFileResult
 };
 #endif
 
+struct ThreadContext
+{
+  size_t ThreadID;
+};
 
-#define PLATFORM_READ_ENTIRE_FILE(name) DebugFileResult name(char *filename)
+
+#define PLATFORM_READ_ENTIRE_FILE(name) DebugFileResult name(ThreadContext *threadContext, char *filename)
 typedef PLATFORM_READ_ENTIRE_FILE(PlatformReadEntireFileType);
 
-#define PLATFORM_FREE_FILE_MEMORY(name) void name(void *memory)
+#define PLATFORM_FREE_FILE_MEMORY(name) void name(ThreadContext *threadContext, void *memory)
 typedef PLATFORM_FREE_FILE_MEMORY(PlatformFreeFileMemoryType);
 
-#define PLATFORM_WRITE_ENTIRE_FILE(name) bool name(char *filename, size_t memorySize, void *memory)
+#define PLATFORM_WRITE_ENTIRE_FILE(name) bool name(ThreadContext *threadContext, char *filename, size_t memorySize, void *memory)
 typedef PLATFORM_WRITE_ENTIRE_FILE(PlatformWriteEntireFileType);
 
 
@@ -196,9 +201,9 @@ struct GameMemory
 //Game provides to platform layer
 //input, bitmap to output and sound output, timing
 
-#define GAME_UPDATE_AND_RENDER(name) void name(GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
+#define GAME_UPDATE_AND_RENDER(name) void name(ThreadContext *threadContext, GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
 typedef GAME_UPDATE_AND_RENDER(GameUpdateAndRenderType);
-#define GAME_GET_SOUND_SAMPLES(name) void name(GameMemory *gameMemory,  GameSoundBuffer *soundBuffer)
+#define GAME_GET_SOUND_SAMPLES(name) void name(ThreadContext *threadContext, GameMemory *gameMemory,  GameSoundBuffer *soundBuffer)
 typedef GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesType);
 
 
