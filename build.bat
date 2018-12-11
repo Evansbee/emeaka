@@ -12,7 +12,7 @@ set LinkOpts32Bit=-subsystem:windows,5.1
 if not exist ".\bin" mkdir .\bin
 pushd .\bin
 del *.pdb >nul 2>&1
-cl  %EmeakaCompilerFlags% %CommonCompilerFlags% -Fmemeaka.map  /LD ..\src\emeaka.cpp -I..\inc /link /PDB:emeaka_%RANDOM%.pdb %LinkOpts64Bit% -opt:ref /EXPORT:GameUpdateAndRender /EXPORT:GameGetSoundSamples
+cl  %EmeakaCompilerFlags% %CommonCompilerFlags% -Fmemeaka.map  /LD ..\src\emeaka.cpp -I..\inc /link /PDB:emeaka_%RANDOM%.pdb %LinkOpts64Bit% -opt:ref /EXPORT:GameUpdateAndRender /EXPORT:GameGetSoundSamples /EXPORT:ClearBitmap /EXPORT:DrawPixel /EXPORT:DrawRect /EXPORT:DrawCircle /EXPORT:DrawLine /EXPORT:DrawChar /EXPORT:DrawText
 
 cl  %EmeakaCompilerFlags% %CommonCompilerFlags% -Fmwin32_emeaka.map ..\src\win32_emeaka.cpp -I..\inc /link %LinkOpts64Bit% %CommonLinkerFlags%
 
