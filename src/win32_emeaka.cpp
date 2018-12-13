@@ -967,6 +967,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                Win32PlayInput(&win32State, currentInputBuffer,0);
             }
           
+            gameClocks.UpdateDT = targetFrameTime;
             //**************************************************************************
             // UPDATE AND RENDER
             //**************************************************************************

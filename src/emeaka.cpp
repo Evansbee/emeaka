@@ -221,6 +221,8 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
   GameState *gameState = (GameState *)gameMemory->PermanentStorage;
   if (!gameMemory->IsInitialized)
   {
+   gameState->PlayerX = 200.0f;
+   gameState->PlayerY = 200.0f;
     gameMemory->IsInitialized = true;
   }
   uint8_t intensity = 0;
@@ -228,11 +230,77 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
   {
      intensity = (uint8_t)(50.f * (1.0f - inputBuffer->MouseInput.MouseLocationY));
   }
-  ClearBitmap(offscreenBuffer, 1.f, 0.f, 1.f);
-  float x = inputBuffer->MouseInput.MouseLocationX * offscreenBuffer->Width;
-  float y = inputBuffer->MouseInput.MouseLocationY * offscreenBuffer->Height;
-  DrawRect(offscreenBuffer,x-25.f,y-25.f,x+25.f,y+25.f,1.f,1.f,1.f);
-  DrawLine(offscreenBuffer,0,0,x,y,0.f,0.f,1.f);
+  ClearBitmap(offscreenBuffer, 0.2f, 0.f, 0.2f);
+  
+  uint32_t tileMap[9][16] = {
+      {1, 1, 1, 1,   1, 1, 1, 0,  1, 1, 1,10,  1, 1, 1, 1},
+      {1, 0, 0, 0,   0, 0, 1, 0,  0, 0, 0, 0,  0, 1, 0, 1},
+      {1, 0, 0, 0,   0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 1, 1},
+      {1, 0, 0, 0,   0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1},
+      {0, 0, 0, 0,   0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+      {1, 0, 0, 0,   0, 0, 1, 0,  0, 0, 0, 0,  0, 0, 0, 1},
+      {1, 0, 0, 0,   0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1},
+      {1, 0, 1, 0,   0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1},
+      {1, 1, 1, 1,   1, 1, 1, 1,  1, 0, 1, 1,  1, 1, 1, 1},
+   };
+
+   float tileWidth = 100;
+   float tileHeight = 100;
+   for(size_t row = 0; row < 9; ++row)
+   {
+      for(size_t col = 0; col < 16; ++col)
+      {
+         float startx = (float)col * tileWidth;
+            float starty = (float)row * tileHeight;
+            float endx = startx + tileWidth;
+            float endy = starty + tileHeight;
+         if(tileMap[row][col] == 0)
+         {
+            
+            DrawRect(offscreenBuffer,startx, starty, endx, endy, 1.0f, 1.0f, 1.0f);
+         }
+         else
+         {
+            DrawRect(offscreenBuffer,startx, starty, endx, endy, 0.1f, 0.1f, 0.1f);
+         }
+      }
+   }
+
+   float movementSpeed = 750.f;
+   float playerHeight = 0.75f * tileHeight;
+   float playerWidth = 0.5f * tileWidth;
+   float playerHalfWidth = playerWidth /2.f;
+
+   float px = gameState->PlayerX;
+   float py = gameState->PlayerY;
+   if(inputBuffer->ControllerInput[0].Connected)
+   {
+      gameState->PlayerX += movementSpeed * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageX;
+      gameState->PlayerY -= movementSpeed * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageY;
+      //truncation doedsn't work in the first negative spot (-.9999 = 0)
+      int32_t idx_x = int32_t(gameState->PlayerX/tileWidth);
+      int32_t idx_y = int32_t(gameState->PlayerY/tileHeight);
+      if(tileMap[idx_y][idx_x] == 1 || idx_x >= 16 || idx_x < 0 || idx_y < 0 || idx_y >= 9)
+      {
+         gameState->PlayerX = px;
+         gameState->PlayerY = py;
+      }
+
+      if(inputBuffer->ControllerInput[0].LeftThumbButton.IsDown)
+      {
+         gameState->PlayerX = 200.f;
+         gameState->PlayerY = 200.f;
+      }
+   }
+    px = gameState->PlayerX;
+    py = gameState->PlayerY;
+   float pr = 1.0f;
+   float pg = .5f;
+   float pb = 0;
+   DrawRect(offscreenBuffer,px - playerHalfWidth , py - playerHeight, px + playerHalfWidth, py , pr, pg, pb);
+
+
+
 }
 
 extern "C" void GameGetSoundSamples(ThreadContext *threadContext, GameMemory *gameMemory, GameSoundBuffer *soundBuffer)

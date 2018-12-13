@@ -135,7 +135,8 @@ struct GameInputBuffer
 
 struct GameState
 {
-
+  float PlayerX;
+  float PlayerY;
 };
 
 
@@ -143,7 +144,7 @@ struct GameState
 
 struct GameClocks
 {
-  float SecondsElapsed;
+  float UpdateDT;
 };
 
 struct GameControl 
