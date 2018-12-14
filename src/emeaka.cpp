@@ -214,6 +214,31 @@ extern "C" void DrawText(GameOffscreenBuffer *offscreenBuffer, float x, float y,
 }
 
 
+struct TileMap
+{
+   uint32_t *Map;
+   float TileWidth;
+   float TileHeight;
+   uint32_t TileMapWidth;
+   uint32_t TileMapHeight;
+   float UpperLeftX;
+   float UpperLeftY;
+};
+
+bool IsTilemapPointEmpty(TileMap *tileMap, float testX, float testY)
+{
+   bool result = false;
+   testX -= tileMap->UpperLeftX;
+   testY -= tileMap->UpperLeftY;
+   int32_t tilex = (int32_t)floorf(testX/tileMap->TileWidth);
+   int32_t tiley = (int32_t)floorf(testY/tileMap->TileHeight);
+   if(tilex >= 0 && tilex < (int32_t)tileMap->TileMapWidth &&
+      tiley >= 0 && tiley < (int32_t)tileMap->TileMapHeight)
+   {
+      return (tileMap->Map[tiley * tileMap->TileMapWidth + tilex] == 0);
+   }
+   return false;
+}
 extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
 {
   Assert(sizeof(GameState) <= gameMemory->PermanentStorageSize, "Permanent Storage Inadequate");
@@ -231,32 +256,36 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
      intensity = (uint8_t)(50.f * (1.0f - inputBuffer->MouseInput.MouseLocationY));
   }
   ClearBitmap(offscreenBuffer, 0.2f, 0.f, 0.2f);
-  
-  uint32_t tileMap[9][16] = {
-      {1, 1, 1, 1,   1, 1, 1, 0,  1, 1, 1,10,  1, 1, 1, 1},
-      {1, 0, 0, 0,   0, 0, 1, 0,  0, 0, 0, 0,  0, 1, 0, 1},
-      {1, 0, 0, 0,   0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 1, 1},
-      {1, 0, 0, 0,   0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1},
-      {0, 0, 0, 0,   0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0},
-      {1, 0, 0, 0,   0, 0, 1, 0,  0, 0, 0, 0,  0, 0, 0, 1},
-      {1, 0, 0, 0,   0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1},
-      {1, 0, 1, 0,   0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1},
-      {1, 1, 1, 1,   1, 1, 1, 1,  1, 0, 1, 1,  1, 1, 1, 1},
+  TileMap tileMap;
+  uint32_t myTileMap[9][16] = {
+      {1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1},
+      {1, 0, 0, 0,  0, 0, 1, 0,  0, 0, 0, 0,  0, 1, 0, 1},
+      {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 1, 1},
+      {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1},
+      {0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+      {1, 0, 0, 0,  0, 0, 1, 0,  0, 0, 0, 0,  0, 0, 0, 1},
+      {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1},
+      {1, 0, 1, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1},
+      {1, 1, 1, 1,  1, 1, 1, 0,  1, 1, 1, 1,  1, 1, 1, 1},
    };
+   tileMap.Map = (uint32_t *)&myTileMap;
+   tileMap.TileWidth = 60.f;
+   tileMap.TileHeight = 60.f;
+   tileMap.TileMapWidth = 16;
+   tileMap.TileMapHeight = 9;
+   tileMap.UpperLeftX = 0.0f;
+   tileMap.UpperLeftY = 0.0f;
 
-   float tileWidth = 100;
-   float tileHeight = 100;
-   for(size_t row = 0; row < 9; ++row)
+   for(size_t row = 0; row < tileMap.TileMapHeight; ++row)
    {
-      for(size_t col = 0; col < 16; ++col)
+      for(size_t col = 0; col < tileMap.TileMapWidth; ++col)
       {
-         float startx = (float)col * tileWidth;
-            float starty = (float)row * tileHeight;
-            float endx = startx + tileWidth;
-            float endy = starty + tileHeight;
-         if(tileMap[row][col] == 0)
+         float startx = tileMap.UpperLeftX + (float)col * tileMap.TileWidth;
+         float starty = tileMap.UpperLeftY + (float)row * tileMap.TileHeight;
+         float endx = startx + tileMap.TileWidth;
+         float endy = starty + tileMap.TileHeight;
+         if(tileMap.Map[row * tileMap.TileMapWidth + col] == 0)
          {
-            
             DrawRect(offscreenBuffer,startx, starty, endx, endy, 1.0f, 1.0f, 1.0f);
          }
          else
@@ -266,25 +295,47 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       }
    }
 
-   float movementSpeed = 750.f;
-   float playerHeight = 0.75f * tileHeight;
-   float playerWidth = 0.5f * tileWidth;
+   float movementSpeed = 5.f * tileMap.TileWidth;
+   float playerHeight = 0.75f * tileMap.TileHeight;
+   float playerWidth = 0.5f * tileMap.TileWidth;
    float playerHalfWidth = playerWidth /2.f;
 
-   float px = gameState->PlayerX;
-   float py = gameState->PlayerY;
    if(inputBuffer->ControllerInput[0].Connected)
    {
-      gameState->PlayerX += movementSpeed * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageX;
-      gameState->PlayerY -= movementSpeed * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageY;
-      //truncation doedsn't work in the first negative spot (-.9999 = 0)
-      int32_t idx_x = int32_t(gameState->PlayerX/tileWidth);
-      int32_t idx_y = int32_t(gameState->PlayerY/tileHeight);
-      if(tileMap[idx_y][idx_x] == 1 || idx_x >= 16 || idx_x < 0 || idx_y < 0 || idx_y >= 9)
+      float newPlayerX = gameState->PlayerX + movementSpeed * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageX;
+      
+      if(IsTilemapPointEmpty(&tileMap, newPlayerX, gameState->PlayerY) && IsTilemapPointEmpty(&tileMap, newPlayerX + playerHalfWidth, gameState->PlayerY) && IsTilemapPointEmpty(&tileMap, newPlayerX - playerHalfWidth, gameState->PlayerY))
       {
-         gameState->PlayerX = px;
-         gameState->PlayerY = py;
+         gameState->PlayerX = newPlayerX;         
       }
+      else
+      {  //moveing left -- this doesn't work...
+         if(newPlayerX < gameState->PlayerX)
+         {
+            gameState->PlayerX = playerHalfWidth + floorf(gameState->PlayerX/tileMap.TileWidth) * tileMap.TileWidth;
+         }
+         else
+         {
+            gameState->PlayerX =  floorf((gameState->PlayerX +tileMap.TileWidth) /tileMap.TileWidth) * tileMap.TileWidth - playerHalfWidth - 0.1f;
+         }
+      }
+
+      float newPlayerY = gameState->PlayerY - movementSpeed * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageY;
+      if(IsTilemapPointEmpty(&tileMap, gameState->PlayerX, newPlayerY) && IsTilemapPointEmpty(&tileMap, gameState->PlayerX + playerHalfWidth, newPlayerY) && IsTilemapPointEmpty(&tileMap, gameState->PlayerX - playerHalfWidth, newPlayerY))
+      {
+         gameState->PlayerY = newPlayerY;
+      }
+else
+{  
+         if(newPlayerY < gameState->PlayerY)
+         {
+            gameState->PlayerY = floorf(gameState->PlayerY/tileMap.TileHeight) * tileMap.TileHeight;
+         }
+         else
+         {
+            gameState->PlayerY =  floorf((gameState->PlayerY +tileMap.TileHeight) /tileMap.TileHeight) * tileMap.TileHeight - 0.1f;
+         }}
+
 
       if(inputBuffer->ControllerInput[0].LeftThumbButton.IsDown)
       {
@@ -292,12 +343,10 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
          gameState->PlayerY = 200.f;
       }
    }
-    px = gameState->PlayerX;
-    py = gameState->PlayerY;
    float pr = 1.0f;
    float pg = .5f;
    float pb = 0;
-   DrawRect(offscreenBuffer,px - playerHalfWidth , py - playerHeight, px + playerHalfWidth, py , pr, pg, pb);
+   DrawRect(offscreenBuffer,gameState->PlayerX - playerHalfWidth ,gameState->PlayerY - playerHeight, gameState->PlayerX + playerHalfWidth, gameState->PlayerY , pr, pg, pb);
 
 
 

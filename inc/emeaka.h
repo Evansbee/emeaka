@@ -19,7 +19,7 @@
 #define MegaBytes(x) (KiloBytes(x) * (size_t)1024)
 #define GigaBytes(x) (MegaBytes(x) * (size_t)1024)
 #define TeraBytes(x) (GigaBytes(x) * (size_t)1024)
-
+#define FLOAT_EPSILON 1.19209290E-07F
 
 #if EMEAKA_SLOW
 #define Assert(expression, msg) if(!(expression)) {*(int *)0 = 0;}

@@ -971,7 +971,9 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             //**************************************************************************
             // UPDATE AND RENDER
             //**************************************************************************
+            LARGE_INTEGER preGameUpdateAndRender = Win32GetPerformanceCounter();
             win32GameFunctions.GameUpdateAndRender(&threadContext, &gameMemory, (GameOffscreenBuffer *)(&OffscreenBuffer), currentInputBuffer, &gameClocks);
+            LARGE_INTEGER postGameUpdateAndRender = Win32GetPerformanceCounter();
             //**************************************************************************
             // UPDATE AND RENDER
             //**************************************************************************
@@ -1155,7 +1157,11 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             endFrameTime = Win32GetPerformanceCounter();
             uint64_t endCycleCount = __rdtsc();
 
-
+            char fpsCount[255];
+            float elapsedTime = Win32GetSecondsElapsed(startOfFrameTime, endFrameTime);
+            float gurTime = Win32GetSecondsElapsed(preGameUpdateAndRender, postGameUpdateAndRender);
+            snprintf(fpsCount, 255,"Frame Time: %0.2fms FPS: %0.1f GameUpdateRender: %0.2f", elapsedTime*1000.f, 1.f/elapsedTime, 1000.f * gurTime);
+            win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)windowDimensions.Height - 11.f - 16.f -16.f - 13.f, fpsCount,1.0f,1.0f,1.0f,true);
 #if EMEAKA_INTERNAL
             //Win32DebugSyncDisplay(&win32GameFunctions, &OffscreenBuffer, ArrayCount(debugTimeMarkers), debugTimeMarkers, debugTimeMarkersIndex, &win32SoundOutput,targetFrameTime);
 #endif
