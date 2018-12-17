@@ -328,6 +328,14 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    }
    ClearBitmap(offscreenBuffer, 0.2f, 0.f, 0.2f);
    TileMap tileMap[3];
+   
+   uint32_t largeTilemap[128][128] = 
+   #include "test_tilemap.cpp"
+   ;
+   
+   Chunk chunk = {0};
+   chunk.Tiles = (uint32_t*)&largeTilemap;
+
    uint32_t myTileMap00[9][16] = {
        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
        {1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1},
@@ -370,18 +378,9 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    world.TileMapWidth = 16;
    world.TileMapHeight = 9;
    world.NumTileMaps = 3;
+   world.Chunks = &chunk;
 
-   tileMap[0].Map = (uint32_t *)&myTileMap00;
-   tileMap[0].UpperLeftX = 0.0f;
-   tileMap[0].UpperLeftY = 0.0f;
-
-   tileMap[1].Map = (uint32_t *)&myTileMap01;
-   tileMap[1].UpperLeftX = 0.0f;
-   tileMap[1].UpperLeftY = world.TileSideInPixels * (float)world.TileMapHeight;
-
-   tileMap[2].Map = (uint32_t *)&myTileMap02;
-   tileMap[2].UpperLeftX = world.TileSideInPixels * (float)world.TileMapWidth;
-   tileMap[2].UpperLeftY = 0.f;
+   
 
    world.TileMaps = (TileMap *)&tileMap;
 
@@ -470,7 +469,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       }
    }
 
-   float newPlayerY = gameState->PlayerY - dy;
+   float newPlayerY = gameState->PlayerY + dy;
    if (IsWorldPointEmpty(&world, gameState->PlayerX, newPlayerY) && IsWorldPointEmpty(&world, gameState->PlayerX + playerHalfWidth, newPlayerY) && IsWorldPointEmpty(&world, gameState->PlayerX - playerHalfWidth, newPlayerY))
    {
       gameState->PlayerY = newPlayerY;
