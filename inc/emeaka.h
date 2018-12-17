@@ -34,8 +34,10 @@
 
 struct Position
 {
-   uint32_t TileX;
-   uint32_t TileY;
+   //let's just store these as raw tiles?
+   int64_t TileX;
+   int64_t TileY;
+   int64_t TileZ;
    float TileOffsetX; //relative to the tile
    float TileOffsetY; //relative to the tile
 };

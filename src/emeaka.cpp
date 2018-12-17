@@ -312,7 +312,14 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    {
       gameState->PlayerX = 200.0f;
       gameState->PlayerY = 200.0f;
+      gameState->PlayerPos.TileX = 3;
+      gamestate->PlayerPos.TileY = 3;
+      gameState->PlayerPos.TileZ = 0;
+      gameState->PlayerPos.TileOffsetX = 0.0f;
+      gameState->PlayerPos.TileOffsetY = 0.0f;
+      
       gameMemory->IsInitialized = true;
+
    }
    uint8_t intensity = 0;
    if (inputBuffer->MouseInput.MouseLocationY >= 0.f && inputBuffer->MouseInput.MouseLocationY <= 1.0f)
