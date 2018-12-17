@@ -719,7 +719,6 @@ Win32PlayInput(Win32State *win32State, GameInputBuffer *inputBuffer, int slot)
    }
 }
 
-
 internal inline float Win32GetSecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end)
 {
    float result = (((float)(end.QuadPart - start.QuadPart)) / ((float)PerformanceCounterFrequency));
@@ -732,8 +731,6 @@ internal inline LARGE_INTEGER Win32GetPerformanceCounter()
    QueryPerformanceCounter(&counter);
    return counter;
 }
-
-
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLine, int showCode)
 {
@@ -792,13 +789,24 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
    if (RegisterClassExA(&windowClass))
    {
+      const int drawWidth = 960;
+      const int drawHeight = 540;
+
+      RECT desiredClientSize = {};
+      desiredClientSize.left = 0;
+      desiredClientSize.top = 0;
+      desiredClientSize.bottom = drawHeight + 20;
+      desiredClientSize.right = drawWidth + 20;
+
+      AdjustWindowRect(&desiredClientSize, WS_VISIBLE | WS_OVERLAPPEDWINDOW, false);
+
       HWND window = CreateWindowExA(
           0,
           windowClass.lpszClassName,
           "Eme Aka",
           WS_OVERLAPPEDWINDOW | WS_VISIBLE,
           CW_USEDEFAULT, CW_USEDEFAULT,
-          CW_USEDEFAULT, CW_USEDEFAULT,
+          desiredClientSize.right - desiredClientSize.left, desiredClientSize.bottom - desiredClientSize.top,
           NULL,
           NULL,
           instance,
@@ -806,7 +814,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
       if (window)
       {
          Win32WindowDimensions windowDimensions = GetWin32WindowDimensions(window);
-         Win32ResizeDIBSection(&OffscreenBuffer, windowDimensions.Width, windowDimensions.Height);
+         Win32ResizeDIBSection(&OffscreenBuffer, drawWidth, drawHeight);
          ShowWindow(window, showCode);
          UpdateWindow(window);
          HDC deviceContext = GetDC(window);
@@ -1074,7 +1082,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                //OutputDebugStringA(TextBuffer);
 
 #endif
-               Win32FillSoundBuffer(&win32SoundOutput, byteToLock, bytesToWrite, &soundOutputBuffer);
+            Win32FillSoundBuffer(&win32SoundOutput, byteToLock, bytesToWrite, &soundOutputBuffer);
             }
             else
             {
@@ -1106,26 +1114,26 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             //win32GameFunctions.GameDrawCircle((GameOffscreenBuffer *)(&OffscreenBuffer), 250,250,32,0.7f, 0.9f, 1.0f);
             if(win32State.RecordingState[0] == InputNormal)
             {
-               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f, (float)windowDimensions.Height - 11.f - 16.f, "Input: Normal",1.0f,1.0f,1.0f,true);
+               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f, (float)OffscreenBuffer.Height - 11.f - 16.f, "Input: Normal",1.0f,1.0f,1.0f,true);
             }
             else if(win32State.RecordingState[0] == InputRecording)
             {
-               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer),  16.f,(float)windowDimensions.Height - 11.f - 16.f,"Input: Recording",1.0f,0.0f,0.0f,true);
+               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer),  16.f,(float)OffscreenBuffer.Height - 11.f - 16.f,"Input: Recording",1.0f,0.0f,0.0f,true);
             }
             else 
             {
-               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer),  16.f,(float)windowDimensions.Height - 11.f - 16.f,"Input: Playing",0.0f,1.0f,0.0f,true);
+               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer),  16.f,(float)OffscreenBuffer.Height - 11.f - 16.f,"Input: Playing",0.0f,1.0f,0.0f,true);
             }
 
             char mouseInfo[255];
             snprintf(mouseInfo,255,"Mouse X: %0.4f Mouse Y: %0.4f",lastInputBuffer->MouseInput.MouseLocationX, lastInputBuffer->MouseInput.MouseLocationY);
             if(lastInputBuffer->MouseInput.MouseInWindow)
             {
-               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)windowDimensions.Height - 11.f - 16.f - 13.f, mouseInfo,0.0f,1.0f,0.0f,true);
+               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)OffscreenBuffer.Height - 11.f - 16.f - 13.f, mouseInfo,0.0f,1.0f,0.0f,true);
             }
             else
             {
-               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)windowDimensions.Height - 11.f - 16.f - 13.f, mouseInfo,1.0f,0.0f,0.0f,true);
+               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)OffscreenBuffer.Height - 11.f - 16.f - 13.f, mouseInfo,1.0f,0.0f,0.0f,true);
             }
           
 
@@ -1161,7 +1169,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             float elapsedTime = Win32GetSecondsElapsed(startOfFrameTime, endFrameTime);
             float gurTime = Win32GetSecondsElapsed(preGameUpdateAndRender, postGameUpdateAndRender);
             snprintf(fpsCount, 255,"Frame Time: %0.2fms FPS: %0.1f GameUpdateRender: %0.2f", elapsedTime*1000.f, 1.f/elapsedTime, 1000.f * gurTime);
-            win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)windowDimensions.Height - 11.f - 16.f -16.f - 13.f, fpsCount,1.0f,1.0f,1.0f,true);
+            win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)OffscreenBuffer.Height - 11.f - 16.f -16.f - 13.f, fpsCount,1.0f,1.0f,1.0f,true);
 #if EMEAKA_INTERNAL
             //Win32DebugSyncDisplay(&win32GameFunctions, &OffscreenBuffer, ArrayCount(debugTimeMarkers), debugTimeMarkers, debugTimeMarkersIndex, &win32SoundOutput,targetFrameTime);
 #endif

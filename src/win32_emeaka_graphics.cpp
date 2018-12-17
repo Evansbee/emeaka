@@ -41,17 +41,19 @@ internal void Win32ResizeDIBSection(Win32OffscreenBuffer *Buffer, int width, int
 internal void Win32DisplayBufferInWindow(HDC deviceContext, int windowWidth, int windowHeight, Win32OffscreenBuffer *Buffer, int x, int y, int width, int height)
 {
    //bufferRatio = buffer->Width / Buffer->Height;
+   int OffsetX = 10;
+   int OffsetY = 10;
+   PatBlt(deviceContext, 0, 0, windowWidth,OffsetY,BLACKNESS);
+   PatBlt(deviceContext, 0, OffsetY + Buffer->Height, windowWidth, windowHeight, BLACKNESS);
+   PatBlt(deviceContext, 0, 0, OffsetX, windowHeight, BLACKNESS);
+   PatBlt(deviceContext, OffsetX + Buffer->Width, 0, windowWidth, windowHeight, BLACKNESS);
 
    StretchDIBits(
        deviceContext,
-       //x, y, width, height,
-       //x, y, width, height,
-       0, 0, windowWidth, windowHeight,
+       OffsetX, OffsetY, Buffer->Width, Buffer->Height,
        0, 0, Buffer->Width, Buffer->Height,
-
        Buffer->Memory,
        &Buffer->Info,
        DIB_RGB_COLORS,
        SRCCOPY);
 }
-

@@ -1,5 +1,6 @@
 #pragma once
 #include <cinttypes>
+#include "emeaka_platform.h"
 //helper defines
 
 #define internal static
@@ -29,118 +30,41 @@
 
 
 
-//types
-struct GameOffscreenBuffer
+
+
+struct Position
 {
-  void *Memory;
-  int Height;
-  int Width;
-  int BytesPerPixel;
-  int Pitch;
+   uint32_t TileX;
+   uint32_t TileY;
+   float TileOffsetX; //relative to the tile
+   float TileOffsetY; //relative to the tile
 };
 
-struct GameSoundBuffer
+struct TileMap
 {
-  int16_t *SampleBuffer;
-  size_t SampleCount;
-  int32_t SamplesPerSecond;
+   uint32_t *Map;
+   float UpperLeftX;
+   float UpperLeftY;
 };
 
-struct GameButtonState
+struct World
 {
-  uint32_t HalfTransitions;
-  bool IsDown;
+   float TileSideInMeters;
+   float TileSideInPixels;
+   float PixelsPerMeter;
+   size_t NumTileMaps;
+   TileMap *TileMaps;
+   uint32_t TileMapWidth;
+   uint32_t TileMapHeight;
 };
 
-struct GameAnalogStickState
-{
-  float AverageX;
-  float AverageY;
-};
-
-struct GameControllerInput
-{
-  bool Connected;
-
-  union {
-    GameButtonState Buttons[12];
-    struct
-    {
-      GameButtonState UpButton;
-      GameButtonState DownButton;
-      GameButtonState LeftButton;
-      GameButtonState RightButton;
-      GameButtonState StartButton;
-      GameButtonState BackButton;
-      GameButtonState LeftThumbButton;
-      GameButtonState RightThumbButton;
-      GameButtonState LeftShoulder;
-      GameButtonState RightShoulder;
-      GameButtonState AButton;
-      GameButtonState BButton;
-      GameButtonState XButton;
-      GameButtonState YButton;
-    };
-  };
-  GameAnalogStickState LeftStick;
-  GameAnalogStickState RightStick;
-
-  float RightTrigger;
-  float LeftTrigger;
-
-  uint16_t LeftVibration;
-  uint16_t RightVibration;
-};
-
-struct GameKeyboardInput
-{
-  GameButtonState ShiftButton;
-  GameButtonState AltButton;
-  GameButtonState EscapeButton;
-  GameButtonState UpArrow;
-  GameButtonState DownArrow;
-  GameButtonState RightArrow;
-  GameButtonState LeftArrow;
-  GameButtonState CtrlButton;
-  GameButtonState Key[255];
-  GameButtonState FKey[12];
-};
-
-struct GameMouseInput
-{
-  bool MouseInWindow;
-
-  float MouseLocationX;
-  float MouseLocationY;
-  float WheelDelta;
-
-  union{
-    GameButtonState MouseButton[5];
-    struct
-    {
-      GameButtonState LeftButton;
-      GameButtonState RightButton;
-      GameButtonState MiddleButton;
-    };
-  };  
-};
-
-struct GameInputBuffer
-{
-  //keyboard junk?
-  GameMouseInput MouseInput;
-  GameKeyboardInput KeyboardInput;
-  GameControllerInput ControllerInput[4];
-};
 
 struct GameState
 {
+  Position PlayerPos;
   float PlayerX;
   float PlayerY;
 };
-
-
-
 
 struct GameClocks
 {
