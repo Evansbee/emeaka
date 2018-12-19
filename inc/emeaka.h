@@ -1,5 +1,7 @@
 #pragma once
 #include <cinttypes>
+#include <cstdlib>
+
 #include "emeaka_platform.h"
 //helper defines
 

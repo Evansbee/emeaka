@@ -119,15 +119,7 @@ struct Win32GameFunctions
    char FileName[MAX_PATH];
    char TempFileName[MAX_PATH];
    FILETIME FileWriteTime;
-   GameUpdateAndRenderType *GameUpdateAndRender;
-   GameGetSoundSamplesType *GameGetSoundSamples;
-   GameClearBitmapType *GameClearBitmap;
-   GameDrawPixelType *GameDrawPixel;
-   GameDrawRectType *GameDrawRect;
-   GameDrawCircleType *GameDrawCircle;
-   GameDrawLineType *GameDrawLine;
-   GameDrawCharType *GameDrawChar;
-   GameDrawTextType *GameDrawText;
+   GameAPI APIFunctions;
 };
 
 GAME_UPDATE_AND_RENDER(GameUpdateAndRenderStub)
@@ -214,26 +206,26 @@ internal void Win32LoadGameDLL(Win32GameFunctions *gameFunctions)
       gameFunctions->GameLibrary = LoadLibraryA(gameFunctions->TempFileName);
       if (gameFunctions->GameLibrary)
       {
-         gameFunctions->GameUpdateAndRender =  (GameUpdateAndRenderType *)GetProcAddress(gameFunctions->GameLibrary, "GameUpdateAndRender");
-         gameFunctions->GameGetSoundSamples =  (GameGetSoundSamplesType *)GetProcAddress(gameFunctions->GameLibrary, "GameGetSoundSamples");
+         gameFunctions->APIFunctions.UpdateAndRender =  (GameUpdateAndRenderType *)GetProcAddress(gameFunctions->GameLibrary, "GameUpdateAndRender");
+         gameFunctions->APIFunctions.GetSoundSamples =  (GameGetSoundSamplesType *)GetProcAddress(gameFunctions->GameLibrary, "GameGetSoundSamples");
          
-         gameFunctions->GameClearBitmap = (GameClearBitmapType *)GetProcAddress(gameFunctions->GameLibrary,"ClearBitmap");
-         gameFunctions->GameDrawPixel = (GameDrawPixelType *)GetProcAddress(gameFunctions->GameLibrary,"DrawPixel");
-         gameFunctions->GameDrawRect = (GameDrawRectType *)GetProcAddress(gameFunctions->GameLibrary,"DrawRect");
-         gameFunctions->GameDrawCircle = (GameDrawCircleType *)GetProcAddress(gameFunctions->GameLibrary,"DrawCircle");
-         gameFunctions->GameDrawLine = (GameDrawLineType *)GetProcAddress(gameFunctions->GameLibrary,"DrawLine");
-         gameFunctions->GameDrawChar = (GameDrawCharType *)GetProcAddress(gameFunctions->GameLibrary,"DrawChar");
-         gameFunctions->GameDrawText = (GameDrawTextType *)GetProcAddress(gameFunctions->GameLibrary,"DrawText");
+         gameFunctions->APIFunctions.ClearBitmap = (GameClearBitmapType *)GetProcAddress(gameFunctions->GameLibrary,"ClearBitmap");
+         gameFunctions->APIFunctions.DrawPixel = (GameDrawPixelType *)GetProcAddress(gameFunctions->GameLibrary,"DrawPixel");
+         gameFunctions->APIFunctions.DrawRect = (GameDrawRectType *)GetProcAddress(gameFunctions->GameLibrary,"DrawRect");
+         gameFunctions->APIFunctions.DrawCircle = (GameDrawCircleType *)GetProcAddress(gameFunctions->GameLibrary,"DrawCircle");
+         gameFunctions->APIFunctions.DrawLine = (GameDrawLineType *)GetProcAddress(gameFunctions->GameLibrary,"DrawLine");
+         gameFunctions->APIFunctions.DrawChar = (GameDrawCharType *)GetProcAddress(gameFunctions->GameLibrary,"DrawChar");
+         gameFunctions->APIFunctions.DrawText = (GameDrawTextType *)GetProcAddress(gameFunctions->GameLibrary,"DrawText");
 
-         if(gameFunctions->GameUpdateAndRender && 
-            gameFunctions->GameGetSoundSamples &&
-            gameFunctions->GameClearBitmap &&
-            gameFunctions->GameDrawPixel &&
-            gameFunctions->GameDrawRect &&
-            gameFunctions->GameDrawCircle &&
-            gameFunctions->GameDrawLine &&
-            gameFunctions->GameDrawChar &&
-            gameFunctions->GameDrawText)
+         if(gameFunctions->APIFunctions.UpdateAndRender && 
+            gameFunctions->APIFunctions.GetSoundSamples &&
+            gameFunctions->APIFunctions.ClearBitmap &&
+            gameFunctions->APIFunctions.DrawPixel &&
+            gameFunctions->APIFunctions.DrawRect &&
+            gameFunctions->APIFunctions.DrawCircle &&
+            gameFunctions->APIFunctions.DrawLine &&
+            gameFunctions->APIFunctions.DrawChar &&
+            gameFunctions->APIFunctions.DrawText)
          {
             GET_FILEEX_INFO_LEVELS infoLevel = GetFileExInfoStandard;
             WIN32_FILE_ATTRIBUTE_DATA fileData;
@@ -247,15 +239,15 @@ internal void Win32LoadGameDLL(Win32GameFunctions *gameFunctions)
    //Do we need to protect for teh copy file as well...
    if(setToDefault)
       {
-         gameFunctions->GameUpdateAndRender = GameUpdateAndRenderStub;
-         gameFunctions->GameGetSoundSamples = GameGetSoundSamplesStub;
-         gameFunctions->GameClearBitmap = GameClearBitmapStub;
-         gameFunctions->GameDrawPixel = GameDrawPixelStub;
-         gameFunctions->GameDrawRect =  GameDrawRectStub;
-         gameFunctions->GameDrawCircle = GameDrawCircleStub;
-         gameFunctions->GameDrawLine = GameDrawLineStub;
-         gameFunctions->GameDrawChar =  GameDrawCharStub;
-         gameFunctions->GameDrawText =  GameDrawTextStub;
+         gameFunctions->APIFunctions.UpdateAndRender = GameUpdateAndRenderStub;
+         gameFunctions->APIFunctions.GetSoundSamples = GameGetSoundSamplesStub;
+         gameFunctions->APIFunctions.ClearBitmap = GameClearBitmapStub;
+         gameFunctions->APIFunctions.DrawPixel = GameDrawPixelStub;
+         gameFunctions->APIFunctions.DrawRect =  GameDrawRectStub;
+         gameFunctions->APIFunctions.DrawCircle = GameDrawCircleStub;
+         gameFunctions->APIFunctions.DrawLine = GameDrawLineStub;
+         gameFunctions->APIFunctions.DrawChar =  GameDrawCharStub;
+         gameFunctions->APIFunctions.DrawText =  GameDrawTextStub;
       }
 }
 
@@ -637,20 +629,20 @@ internal void Win32DebugSyncDisplay(Win32GameFunctions *gameFunctions, Win32Offs
       float xpos = padx + (uint32_t)( C * ((float)markers[i].OutputPlayCursor));
       float ypos = 16.f;
       float height = 64.f;
-      gameFunctions->GameDrawLine((GameOffscreenBuffer *)offscreenBuffer, xpos, ypos, xpos, ypos + height, 1.0f,1.0f,1.0f);
+      gameFunctions->APIFunctions.DrawLine((GameOffscreenBuffer *)offscreenBuffer, xpos, ypos, xpos, ypos + height, 1.0f,1.0f,1.0f);
 
       xpos = padx + (uint32_t)(C * (float)markers[i].OutputWriteCursor);
-      gameFunctions->GameDrawLine((GameOffscreenBuffer *)offscreenBuffer, xpos, ypos,xpos, ypos +  height, 0.0f,0.0f,1.0f);
+      gameFunctions->APIFunctions.DrawLine((GameOffscreenBuffer *)offscreenBuffer, xpos, ypos,xpos, ypos +  height, 0.0f,0.0f,1.0f);
 
       ypos += height + 16.f;
       xpos = padx + (uint32_t)(C * ((float)markers[i].OutputLocation));
-      gameFunctions->GameDrawLine((GameOffscreenBuffer *)offscreenBuffer, xpos, ypos, xpos, ypos + height, 1.0f,1.0f,1.0f);
+      gameFunctions->APIFunctions.DrawLine((GameOffscreenBuffer *)offscreenBuffer, xpos, ypos, xpos, ypos + height, 1.0f,1.0f,1.0f);
       xpos = padx + (uint32_t)(C * ((float)markers[i].OutputByteCount+(float)markers[i].OutputLocation));
-      gameFunctions->GameDrawLine((GameOffscreenBuffer *)offscreenBuffer, xpos, ypos,xpos, ypos +  height, 0.0f,0.0f,1.0f);
+      gameFunctions->APIFunctions.DrawLine((GameOffscreenBuffer *)offscreenBuffer, xpos, ypos,xpos, ypos +  height, 0.0f,0.0f,1.0f);
 
       ypos += height + 16.f;
       xpos = padx + (uint32_t)(C * ((float)markers[i].ExpectedFlipPlayCursor));
-      gameFunctions->GameDrawLine((GameOffscreenBuffer *)offscreenBuffer, xpos, ypos, xpos, ypos + height, 1.0f,0.0f,0.0f);
+      gameFunctions->APIFunctions.DrawLine((GameOffscreenBuffer *)offscreenBuffer, xpos, ypos, xpos, ypos + height, 1.0f,0.0f,0.0f);
 //
       //xpos = padx + (uint32_t)((float)(offscreenBuffer->Width-2*padx) * ((float)markers[i].FlipPlayCursor / (float)soundOutputBuffer->BufferSize));
       //ypos = 64;
@@ -664,7 +656,7 @@ internal void Win32DebugSyncDisplay(Win32GameFunctions *gameFunctions, Win32Offs
 
       
    }
-   gameFunctions->GameDrawText((GameOffscreenBuffer *)offscreenBuffer, 400.f, 400.f, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n1234567890\n!@#$%^&*()_-=+~`,./?><;'\":[]\\|}{}",1.0f, 1.0f, 1.0f, true);
+   gameFunctions->APIFunctions.DrawText((GameOffscreenBuffer *)offscreenBuffer, 400.f, 400.f, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n1234567890\n!@#$%^&*()_-=+~`,./?><;'\":[]\\|}{}",1.0f, 1.0f, 1.0f, true);
 }
 
 #define RECORDING_FILE_NAME ("emeaka_replay.ein")
@@ -980,7 +972,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             // UPDATE AND RENDER
             //**************************************************************************
             LARGE_INTEGER preGameUpdateAndRender = Win32GetPerformanceCounter();
-            win32GameFunctions.GameUpdateAndRender(&threadContext, &gameMemory, (GameOffscreenBuffer *)(&OffscreenBuffer), currentInputBuffer, &gameClocks);
+            win32GameFunctions.APIFunctions.UpdateAndRender(&threadContext, &gameMemory, (GameOffscreenBuffer *)(&OffscreenBuffer), currentInputBuffer, &gameClocks);
             LARGE_INTEGER postGameUpdateAndRender = Win32GetPerformanceCounter();
             //**************************************************************************
             // UPDATE AND RENDER
@@ -1049,7 +1041,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                //**************************************************************************
                // SOUND UPDATE
                //**************************************************************************
-               win32GameFunctions.GameGetSoundSamples(&threadContext, &gameMemory, &soundOutputBuffer);
+               win32GameFunctions.APIFunctions.GetSoundSamples(&threadContext, &gameMemory, &soundOutputBuffer);
 
                
 #ifdef EMEAKA_INTERNAL
@@ -1114,26 +1106,26 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             //win32GameFunctions.GameDrawCircle((GameOffscreenBuffer *)(&OffscreenBuffer), 250,250,32,0.7f, 0.9f, 1.0f);
             if(win32State.RecordingState[0] == InputNormal)
             {
-               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f, (float)OffscreenBuffer.Height - 11.f - 16.f, "Input: Normal",1.0f,1.0f,1.0f,true);
+               win32GameFunctions.APIFunctions.DrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f, (float)OffscreenBuffer.Height - 11.f - 16.f, "Input: Normal",1.0f,1.0f,1.0f,true);
             }
             else if(win32State.RecordingState[0] == InputRecording)
             {
-               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer),  16.f,(float)OffscreenBuffer.Height - 11.f - 16.f,"Input: Recording",1.0f,0.0f,0.0f,true);
+               win32GameFunctions.APIFunctions.DrawText((GameOffscreenBuffer *)(&OffscreenBuffer),  16.f,(float)OffscreenBuffer.Height - 11.f - 16.f,"Input: Recording",1.0f,0.0f,0.0f,true);
             }
             else 
             {
-               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer),  16.f,(float)OffscreenBuffer.Height - 11.f - 16.f,"Input: Playing",0.0f,1.0f,0.0f,true);
+               win32GameFunctions.APIFunctions.DrawText((GameOffscreenBuffer *)(&OffscreenBuffer),  16.f,(float)OffscreenBuffer.Height - 11.f - 16.f,"Input: Playing",0.0f,1.0f,0.0f,true);
             }
 
             char mouseInfo[255];
             snprintf(mouseInfo,255,"Mouse X: %0.4f Mouse Y: %0.4f",lastInputBuffer->MouseInput.MouseLocationX, lastInputBuffer->MouseInput.MouseLocationY);
             if(lastInputBuffer->MouseInput.MouseInWindow)
             {
-               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)OffscreenBuffer.Height - 11.f - 16.f - 13.f, mouseInfo,0.0f,1.0f,0.0f,true);
+               win32GameFunctions.APIFunctions.DrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)OffscreenBuffer.Height - 11.f - 16.f - 13.f, mouseInfo,0.0f,1.0f,0.0f,true);
             }
             else
             {
-               win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)OffscreenBuffer.Height - 11.f - 16.f - 13.f, mouseInfo,1.0f,0.0f,0.0f,true);
+               win32GameFunctions.APIFunctions.DrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)OffscreenBuffer.Height - 11.f - 16.f - 13.f, mouseInfo,1.0f,0.0f,0.0f,true);
             }
           
 
@@ -1169,7 +1161,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             float elapsedTime = Win32GetSecondsElapsed(startOfFrameTime, endFrameTime);
             float gurTime = Win32GetSecondsElapsed(preGameUpdateAndRender, postGameUpdateAndRender);
             snprintf(fpsCount, 255,"Frame Time: %0.2fms FPS: %0.1f GameUpdateRender: %0.2f", elapsedTime*1000.f, 1.f/elapsedTime, 1000.f * gurTime);
-            win32GameFunctions.GameDrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)OffscreenBuffer.Height - 11.f - 16.f -16.f - 13.f, fpsCount,1.0f,1.0f,1.0f,true);
+            win32GameFunctions.APIFunctions.DrawText((GameOffscreenBuffer *)(&OffscreenBuffer), 16.f,(float)OffscreenBuffer.Height - 11.f - 16.f -16.f - 13.f, fpsCount,1.0f,1.0f,1.0f,true);
 #if EMEAKA_INTERNAL
             //Win32DebugSyncDisplay(&win32GameFunctions, &OffscreenBuffer, ArrayCount(debugTimeMarkers), debugTimeMarkers, debugTimeMarkersIndex, &win32SoundOutput,targetFrameTime);
 #endif

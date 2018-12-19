@@ -133,7 +133,7 @@ typedef PLATFORM_FREE_FILE_MEMORY(PlatformFreeFileMemoryType);
 typedef PLATFORM_WRITE_ENTIRE_FILE(PlatformWriteEntireFileType);
 
 
-struct GamePlatformFunctions 
+struct PlatformAPI 
 {
   PlatformReadEntireFileType *PlatformReadEntireFile;
   PlatformFreeFileMemoryType *PlatformFreeFileMemory;
@@ -142,7 +142,7 @@ struct GamePlatformFunctions
 
 struct GameMemory
 {
-  GamePlatformFunctions PlatformFunctions;
+  PlatformAPI PlatformFunctions;
   bool IsInitialized;
   size_t PermanentStorageSize;
   void* PermanentStorage; //required to be zero at startup.
@@ -185,3 +185,15 @@ typedef GAME_DRAW_CHAR(GameDrawCharType);
 
 #define GAME_DRAW_TEXT(name) void name(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, char* text, float r, float g, float b, bool shadow)
 typedef GAME_DRAW_TEXT(GameDrawTextType);
+
+struct GameAPI {
+  GameUpdateAndRenderType *UpdateAndRender;
+  GameGetSoundSamplesType *GetSoundSamples;
+  GameClearBitmapType *ClearBitmap;
+  GameDrawPixelType *DrawPixel;
+  GameDrawRectType *DrawRect;
+  GameDrawCircleType *DrawCircle;
+  GameDrawLineType *DrawLine;
+  GameDrawCharType *DrawChar;
+  GameDrawTextType *DrawText;
+};

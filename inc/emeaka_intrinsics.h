@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cmath>
-#include <intrin.h>
+//#include <intrin.h>
 
 
 inline float Floor(float in)
