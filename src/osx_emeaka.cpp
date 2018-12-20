@@ -177,7 +177,27 @@ internal bool OSXGetExecutableDirectory(char *exePath, uint32_t exePathSize)
     }
 }
 
-internal void OSXHandleEvent(SDL_Event *event, OSXOffscreenBuffer *offscreenBuffer)
+internal void OSXUpdateMouse(GameInputBuffer *inputBuffer)
+{
+
+}
+
+internal void OSXUpdateControllers(GameInputBuffer *inputBuffer)
+{
+
+}
+
+internal void OSXInitializeSound()
+{
+
+}
+internal void OSXSwapInputBuffers(GameInputBuffer **current, GameInputBuffer **old)
+{
+    GameInputBuffer *storage = *old;
+    *old = *current;
+    *current = storage;
+}
+internal void OSXHandleEvent(SDL_Event *event, OSXOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer)
 {
 
     switch(event->type)
@@ -228,8 +248,14 @@ int main(int argc, char** argv)
         if(renderer)
         {   
             //game is going to run, let's get everything ready...
-            GameInputBuffer inputBuffer = {};
-            GameSoundBuffer soundBuffer = {};
+            GameInputBuffer *currentInputBuffer;
+            GameInputBuffer *lastInputBuffer;
+
+            GameInputBuffer inputBuffer[2] = {};
+    
+            currentInputBuffer = &inputBuffer[0];
+            lastInputBuffer = &inputBuffer[1];
+
             OSXOffscreenBuffer offscreenBuffer = {};
             GameClocks gameClocks = {};
             GameMemory gameMemory = {};
@@ -237,7 +263,7 @@ int main(int argc, char** argv)
             gameClocks.UpdateDT = 1.f / 30.f;
             
             gameMemory.PermanentStorageSize = MegaBytes(64);
-            gameMemory.TransientStorageSize = GigaBytes(1);
+            gameMemory.TransientStorageSize = GigaBytes(2);
             size_t totalMemorySize = gameMemory.PermanentStorageSize + gameMemory.TransientStorageSize;
             gameMemory.PermanentStorage = mmap((void *)TeraBytes(2),totalMemorySize,PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON,-1, 0);
             gameMemory.TransientStorage = (void *)((size_t)gameMemory.PermanentStorage + gameMemory.PermanentStorageSize);
@@ -262,10 +288,15 @@ int main(int argc, char** argv)
                 SDL_Event ev;
                 while(SDL_PollEvent(&ev))
                 {
-                    OSXHandleEvent(&ev, &offscreenBuffer); 
+                    OSXHandleEvent(&ev, &offscreenBuffer, currentInputBuffer); 
                 }
-                dynamicGame.APIFunctions.UpdateAndRender(&threadContext, &gameMemory, (GameOffscreenBuffer *)&offscreenBuffer, &inputBuffer, &gameClocks);
+                OSXUpdateMouse(currentInputBuffer);
+                OSXUpdateControllers(currentInputBuffer);
+
+                dynamicGame.APIFunctions.UpdateAndRender(&threadContext, &gameMemory, (GameOffscreenBuffer *)&offscreenBuffer, currentInputBuffer, &gameClocks);
                 OSXUpdateWindow(window,renderer,&offscreenBuffer);
+
+                OSXSwapInputBuffers(&currentInputBuffer, &lastInputBuffer);
             }
         }
     }
