@@ -41,13 +41,6 @@ struct Position
    float TileOffsetY; //relative to the tile
 };
 
-struct TileMap
-{
-   uint32_t *Map;
-   float UpperLeftX;
-   float UpperLeftY;
-};
-
 //   ^ +y
 //   |
 //   |
@@ -69,8 +62,6 @@ struct World
    float TileSideInMeters;
    float TileSideInPixels;
    float PixelsPerMeter;
-   size_t NumTileMaps;
-   TileMap *TileMaps;
    Chunk *Chunks;
    uint32_t TileMapWidth;
    uint32_t TileMapHeight;

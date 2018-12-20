@@ -300,7 +300,11 @@ internal void GetDrawCoordinates(World *world, float px, float py, float *dx, fl
 inline internal uint32_t
 GetTileValueUnchecked(TileMap *tileMap, World *world, int32_t tileX, int32_t tileY)
 {
-   return tileMap->Map[tileY * world->TileMapWidth + tileX];
+   if(tileMap && tileMap->Map)
+   {
+      return tileMap->Map[tileY * world->TileMapWidth + tileX];
+   }
+   return 0;
 }
 
 extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
@@ -310,6 +314,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    GameState *gameState = (GameState *)gameMemory->PermanentStorage;
    if (!gameMemory->IsInitialized)
    {
+      printf("Initializing In Game Memory...\n");
       gameState->PlayerX = 200.0f;
       gameState->PlayerY = 200.0f;
       gameState->PlayerPos.TileX = 3;
@@ -319,7 +324,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       gameState->PlayerPos.TileOffsetY = 0.0f;
       
       gameMemory->IsInitialized = true;
-
+      printf("Initialized...\n");
    }
    uint8_t intensity = 0;
    if (inputBuffer->MouseInput.MouseLocationY >= 0.f && inputBuffer->MouseInput.MouseLocationY <= 1.0f)
@@ -327,7 +332,6 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       intensity = (uint8_t)(50.f * (1.0f - inputBuffer->MouseInput.MouseLocationY));
    }
    ClearBitmap(offscreenBuffer, 0.2f, 0.f, 0.2f);
-   TileMap tileMap[3];
    
    uint32_t largeTilemap[128][128] = 
    #include "test_tilemap.cpp"
@@ -336,41 +340,6 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    Chunk chunk = {0};
    chunk.Tiles = (uint32_t*)&largeTilemap;
 
-   uint32_t myTileMap00[9][16] = {
-       {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-       {1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1},
-       {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1},
-       {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-       {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-       {1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-       {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-       {1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-       {1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-   };
-
-   uint32_t myTileMap01[9][16] = {
-       {1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-       {1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1},
-       {1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1},
-       {1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-       {1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1},
-       {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-       {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-       {1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-       {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-   };
-
-   uint32_t myTileMap02[9][16] = {
-       {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-       {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-       {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1},
-       {1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1},
-       {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-       {1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1},
-       {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1},
-       {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-       {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-   };
 
    World world;
    world.TileSideInMeters = 1.4f;
@@ -380,9 +349,6 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    world.NumTileMaps = 3;
    world.Chunks = &chunk;
 
-   
-
-   world.TileMaps = (TileMap *)&tileMap;
 
 
    TileMap *currentTileMap = GetCurrentTileMapForPlayerLocation(&world, gameState->PlayerX, gameState->PlayerY);
