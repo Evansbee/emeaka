@@ -34,11 +34,12 @@
 struct Position
 {
    //let's just store these as raw tiles?
-   int64_t TileX;
-   int64_t TileY;
-   int64_t TileZ;
+   uint64_t TileX;
+   uint64_t TileY;
+   uint64_t TileZ;
    float TileOffsetX; //relative to the tile
-   float TileOffsetY; //relative to the tile
+   float TileOffsetY; //relative to the tile, note that 0.0 is the MIDDLE of the tile, -0.5 - 0.5 are the distances.
+   
 };
 
 //   ^ +y
@@ -47,32 +48,47 @@ struct Position
 //   | (0,0)
 //---+----------> +x
 
+
+
 struct Chunk
 {
-  static const size_t ChunkSize = 128;
-  static const size_t ChunkMask = 0x7F;
-  static const size_t ChunkShift= 7;
-  int64_t ChunkBaseX;
-  int64_t ChunkBaseY; //lower left tile number...
-  uint32_t *Tiles;
+  uint64_t *Tiles;
 };
 
-struct World
+struct WorldTileMap
 {
+  size_t ChunkSize;
+  size_t ChunkMask;
+  size_t ChunkShift;
+  size_t ChunksX;
+  size_t ChunksY;
+  size_t ChunksZ;
+  Chunk *Chunks;
+};
+
+struct GameWorld
+{ 
+  WorldTileMap *TileMap;
    float TileSideInMeters;
    float TileSideInPixels;
    float PixelsPerMeter;
-   Chunk *Chunks;
-   uint32_t TileMapWidth;
-   uint32_t TileMapHeight;
+   
 };
 
+struct MemoryArena
+{
+  void *Start;
+  size_t Size;
+  size_t Used;
+};
 
 struct GameState
 {
   Position PlayerPos;
-  float PlayerX;
-  float PlayerY;
+  MemoryArena WorldMemoryArena;
+  GameWorld *World;
+  float ToneHz;
+  float tSin;
 };
 
 

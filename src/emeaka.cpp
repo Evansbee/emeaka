@@ -54,6 +54,11 @@ extern "C" void DrawRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y
    }
 }
 
+extern "C" void StrokeRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float fillr, float fillg, float fillb, float stroker, float strokeg, float strokeb)
+{
+   
+}
+
 extern "C" void DrawCircle(GameOffscreenBuffer *offscreenBuffer, float cx, float cy, float radius, float r, float g, float b)
 {
    float x = radius - 1.f;
@@ -212,99 +217,120 @@ extern "C" void DrawText(GameOffscreenBuffer *offscreenBuffer, float x, float y,
       }
    }
 }
-
-
-internal void MakeCannonical(Position *position)
+//MEMORY
+internal void InitializeMemoryArena(MemoryArena *arena, void *start, size_t size)
 {
-   while(position->TileOffsetX > 1.0f)
-   {
-      position->TileOffsetX -= 1.0f;
-      position->TileX++;
-   }
-
-   while(position->TileOffsetX < 0.0f)
-   {
-      position->TileOffsetX += 1.0f;
-      position->TileX--;
-   }
-
-   while(position->TileOffsetY > 1.0f)
-   {
-      position->TileOffsetY -= 1.0f;
-      position->TileY++;
-   }
-
-   while(position->TileOffsetY < 0.0f)
-   {
-      position->TileOffsetY += 1.0f;
-      position->TileY--;
-   }
+   arena->Start = start;
+   arena->Size = size;
+   arena->Used = 0;
 }
 
-uint32_t GetTileIndex(uint32_t TileInfo)
+void *PushStruct(MemoryArena *arena, size_t size)
 {
-   return TileInfo & 0x0000000F;
+   Assert(size < (arena->Size - arena->Used), "Memory Overload!");
+   void *result = (void *)((size_t)arena->Start + arena->Used); 
+   arena->Used += size;
+   return result;
 }
 
 
-internal TileMap*
-GetCurrentTileMapForPlayerLocation(World *world, float x, float y)
+//bool true if position changed.
+bool OffsetAndNormalizePosition(GameWorld *world, Position *pos, float dx, float dy)
 {
-   for(size_t i = 0; i < world->NumTileMaps ; ++i)
-   {  
-      TileMap *testTileMap = &(world->TileMaps[i]);
-      if(x >= testTileMap->UpperLeftX && x < testTileMap->UpperLeftX + world->TileSideInPixels*world->TileMapWidth &&
-         y >= testTileMap->UpperLeftY && y < testTileMap->UpperLeftY + world->TileSideInPixels*world->TileMapHeight)
-         {
-            return testTileMap;
-         }
-   }
-   return nullptr;
-}
+   pos->TileOffsetX += dx;
+   pos->TileOffsetY += dy;
 
-bool IsTilemapPointEmpty(TileMap *tileMap, World *world, float testX, float testY)
-{
-   bool result = false;
-   testX -= tileMap->UpperLeftX;
-   testY -= tileMap->UpperLeftY;
-   int32_t tilex = (int32_t)Floor(testX / world->TileSideInPixels);
-   int32_t tiley = (int32_t)Floor(testY / world->TileSideInPixels);
-   if (tilex >= 0 && tilex < (int32_t)world->TileMapWidth &&
-       tiley >= 0 && tiley < (int32_t)world->TileMapHeight)
-   {
-      return (tileMap->Map[tiley * world->TileMapWidth + tilex] == 0);
-   }
-   return false;
-}
+   int32_t tileChangeX = (int32_t)Round(pos->TileOffsetX);
+   int32_t tileChangeY = (int32_t)Round(pos->TileOffsetY);
 
-internal bool IsWorldPointEmpty(World *world, float x, float y)
-{
-   TileMap *testTileMap = GetCurrentTileMapForPlayerLocation(world, x, y);
-   if(testTileMap != nullptr)
-   {
-      return IsTilemapPointEmpty(testTileMap, world, x, y);
-   }
-   return false;
-}
+   pos->TileOffsetX -= (float)tileChangeX;
+   pos->TileX += tileChangeX;
 
-internal void GetDrawCoordinates(World *world, float px, float py, float *dx, float *dy)
+   pos->TileOffsetY -= (float)tileChangeY;
+   pos->TileY += tileChangeY;
+
+   pos->TileX = pos->TileX % (world->TileMap->ChunksX * world->TileMap->ChunkSize);
+   pos->TileY = pos->TileY % (world->TileMap->ChunksY * world->TileMap->ChunkSize);
+
+   return (tileChangeX != 0 || tileChangeY != 0);
+}
+internal void GenerateChunk(GameState *gameState, uint64_t chunkX, uint64_t chunkY)
 {
-   TileMap *testTileMap = GetCurrentTileMapForPlayerLocation(world, px, py);
-   if(testTileMap != nullptr)
+   size_t chunkidx = chunkY * gameState->World->TileMap->ChunksX + chunkX;
+   size_t tiles_per_chunk = gameState->World->TileMap->ChunkSize * gameState->World->TileMap->ChunkSize;
+   gameState->World->TileMap->Chunks[chunkidx].Tiles = (uint64_t *)PushStruct(&gameState->WorldMemoryArena,tiles_per_chunk * sizeof(uint64_t));
+
+   for(uint64_t tiley = 0; tiley < gameState->World->TileMap->ChunkSize; ++tiley)
    {
-      *dx = px - testTileMap->UpperLeftX;
-      *dy = py - testTileMap->UpperLeftY;
+      for(uint64_t tilex = 0; tilex < gameState->World->TileMap->ChunkSize; ++tilex)
+      {
+         gameState->World->TileMap->Chunks[chunkidx].Tiles[tiley * gameState->World->TileMap->ChunkSize + tilex] = ((rand()%100)<75);
+      }
    }
 }
-
-inline internal uint32_t
-GetTileValueUnchecked(TileMap *tileMap, World *world, int32_t tileX, int32_t tileY)
+Chunk *GetChunkForPosition(GameState *gameState, GameWorld *world, uint64_t x, uint64_t y)
 {
-   if(tileMap && tileMap->Map)
+   uint64_t chunkx = (x >> world->TileMap->ChunkShift);
+   uint64_t chunky = (y >> world->TileMap->ChunkShift);
+
+   chunkx = (chunkx % world->TileMap->ChunksX);
+   chunky = (chunky % world->TileMap->ChunksY);
+
+   if(world->TileMap->Chunks[chunky * world->TileMap->ChunksX + chunkx].Tiles == NULL)
    {
-      return tileMap->Map[tileY * world->TileMapWidth + tileX];
+      GenerateChunk(gameState, chunkx, chunky);
    }
-   return 0;
+   return &world->TileMap->Chunks[chunky * world->TileMap->ChunksX + chunkx];
+}
+
+uint64_t GetTileValueForPosition(GameState *gameState, GameWorld *world, uint64_t x, uint64_t y)
+{
+   Chunk *chunk = GetChunkForPosition(gameState, world, x, y);
+   if(chunk != NULL and chunk->Tiles != NULL)
+   {
+      uint64_t relx = x & world->TileMap->ChunkMask;
+      uint64_t rely = y & world->TileMap->ChunkMask;
+      return chunk->Tiles[rely * world->TileMap->ChunkSize + relx];
+   }
+   return uint64_t(-1);
+}
+
+
+
+
+
+void InitializeWorld(GameState *gameState)
+{
+   gameState->World = (GameWorld *)PushStruct(&gameState->WorldMemoryArena,sizeof(GameWorld));
+   gameState->World->TileMap = (WorldTileMap *)PushStruct(&gameState->WorldMemoryArena, sizeof(WorldTileMap));
+
+   gameState->World->TileMap->ChunksX = 64;
+   gameState->World->TileMap->ChunksY = 64;
+   gameState->World->TileMap->ChunkSize = 32;
+   gameState->World->TileMap->ChunkMask = 0x1f;
+   gameState->World->TileMap->ChunkShift = 5;
+
+
+   gameState->World->TileSideInMeters = 2.f;
+   gameState->World->TileSideInPixels = 40.f;
+   gameState->World->PixelsPerMeter = gameState->World->TileSideInPixels / gameState->World->TileSideInMeters;
+   
+   gameState->World->TileMap->Chunks = (Chunk *)PushStruct(&gameState->WorldMemoryArena, 
+                                                  gameState->World->TileMap->ChunksX * gameState->World->TileMap->ChunksY * sizeof(Chunk));
+   for(uint64_t y = 0; y < gameState->World->TileMap->ChunksY; ++y)
+   {
+      for(uint64_t x = 0; x < gameState->World->TileMap->ChunksX; ++x)
+      {
+         gameState->World->TileMap->Chunks[y*gameState->World->TileMap->ChunksX + x].Tiles = NULL;
+      }
+   }
+   
+}
+
+void DrawCharacter(GameOffscreenBuffer *offscreenBuffer, float x, float y, float width, float height, float r, float g, float b, float a)
+{
+   DrawRect(offscreenBuffer,x-width/2.f, y-height, x+width/2.f, y,r,g,b);
+
 }
 
 extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
@@ -315,157 +341,103 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    if (!gameMemory->IsInitialized)
    {
       printf("Initializing In Game Memory...\n");
-      gameState->PlayerX = 200.0f;
-      gameState->PlayerY = 200.0f;
-      gameState->PlayerPos.TileX = 3;
-      gameState->PlayerPos.TileY = 3;
+      gameState->PlayerPos.TileX = 5;
+      gameState->PlayerPos.TileY = 30;
       gameState->PlayerPos.TileZ = 0;
       gameState->PlayerPos.TileOffsetX = 0.0f;
       gameState->PlayerPos.TileOffsetY = 0.0f;
-      
+      gameState->ToneHz = 500.f;
+      gameState->tSin = 0.f;
+      InitializeMemoryArena(&gameState->WorldMemoryArena, (void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)), gameMemory->PermanentStorageSize - sizeof(GameState));
+      InitializeWorld(gameState);
       gameMemory->IsInitialized = true;
-      printf("Initialized...\n");
+
+      printf("World Memory Location: 0x%p\n",gameState->World);
+      printf("World->TileMap Location: 0x%p\n",gameState->World->TileMap);
    }
-   uint8_t intensity = 0;
-   if (inputBuffer->MouseInput.MouseLocationY >= 0.f && inputBuffer->MouseInput.MouseLocationY <= 1.0f)
-   {
-      intensity = (uint8_t)(50.f * (1.0f - inputBuffer->MouseInput.MouseLocationY));
-   }
-   ClearBitmap(offscreenBuffer, 0.2f, 0.f, 0.2f);
+   gameState->ToneHz = 500.f + (250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
+
+   ClearBitmap(offscreenBuffer, 0.1f, 0.2f, 0.1f);
    
-   uint32_t largeTilemap[128][128] = 
-   #include "test_tilemap.cpp"
-   ;
+   float dx = 5.f * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageX;
+   float dy = 5.f * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageY;
    
-   Chunk chunk = {0};
-   chunk.Tiles = (uint32_t*)&largeTilemap;
+   OffsetAndNormalizePosition(gameState->World, &gameState->PlayerPos,dx,dy);
+   
+   char movementString[1024];
+   snprintf(movementString, 1024, "TileX: %llu\nTileY: %llu\nOffsetX: %0.2f\nOffsetY: %0.2f",gameState->PlayerPos.TileX, gameState->PlayerPos.TileY, gameState->PlayerPos.TileOffsetX, gameState->PlayerPos.TileOffsetY);
+   char memoryString[1024];
+   float UsedMB = (float)gameState->WorldMemoryArena.Used / (1024.f * 1024.f);
+   float SizeMB = (float)gameState->WorldMemoryArena.Size / (1024.f * 1024.f);
+   float Percent = (UsedMB/SizeMB) * 100.f;
+   snprintf(memoryString, 1024, "World Memory Arena Size: %0.1fMB/%0.1fMB (%0.1f%%)", UsedMB, SizeMB,Percent);
+   
+   //8 left, 8 right, 4 up 4 down = 1 row 1 col
 
-
-   World world;
-   world.TileSideInMeters = 1.4f;
-   world.TileSideInPixels = 60.0f;
-   world.TileMapWidth = 16;
-   world.TileMapHeight = 9;
-   world.NumTileMaps = 3;
-   world.Chunks = &chunk;
-
-
-
-   TileMap *currentTileMap = GetCurrentTileMapForPlayerLocation(&world, gameState->PlayerX, gameState->PlayerY);
-
-   if(currentTileMap == nullptr)
+   float drawStartX = (float)offscreenBuffer->Width/2.f - ((float)gameState->World->TileSideInPixels * 8.5f);
+   float drawStartY = (float)offscreenBuffer->Height/2.f - ((float)gameState->World->TileSideInPixels * 4.5f);
+   
+   for(uint64_t y = 0; y < 9; ++y)
    {
-      return;
-   }
-   for (int32_t row = 0; row < (int32_t)world.TileMapHeight; ++row)
-   {
-      for (int32_t col = 0; col < (int32_t)world.TileMapWidth; ++col)
+      for(uint64_t x = 0; x < 17; ++x)
       {
-         float startx = (float)col * world.TileSideInPixels;
-         float starty = (float)row * world.TileSideInPixels;
-         float endx = startx + world.TileSideInPixels;
-         float endy = starty + world.TileSideInPixels;
-         if (GetTileValueUnchecked(currentTileMap, &world, col, row) == 0)
+         uint64_t tx = (gameState->PlayerPos.TileX - 8 + x) % (gameState->World->TileMap->ChunksX * gameState->World->TileMap->ChunkSize);
+         uint64_t ty = (gameState->PlayerPos.TileY - 4 + y) %( gameState->World->TileMap->ChunksY * gameState->World->TileMap->ChunkSize);
+         float drawX = drawStartX + (x * gameState->World->TileSideInPixels);
+         float drawY = drawStartY + (y * gameState->World->TileSideInPixels);
+         uint64_t tileValue = GetTileValueForPosition(gameState, gameState->World, tx, ty) ;
+         if(tx == gameState->PlayerPos.TileX && ty == gameState->PlayerPos.TileY)
          {
-            DrawRect(offscreenBuffer, startx, starty, endx, endy, 1.0f, 1.0f, 1.0f);
+            DrawRect(offscreenBuffer,drawX, drawY, drawX+gameState->World->TileSideInPixels, drawY+gameState->World->TileSideInPixels,1.f,.0f,.0f);
+         }
+         else if(tileValue == 0)
+         {
+            DrawRect(offscreenBuffer,drawX, drawY, drawX+gameState->World->TileSideInPixels, drawY+gameState->World->TileSideInPixels,.1f,.1f,.1f);
+         }
+         else if(tileValue == 1)
+         {
+            DrawRect(offscreenBuffer,drawX, drawY, drawX+gameState->World->TileSideInPixels, drawY+gameState->World->TileSideInPixels,1,1,1);
          }
          else
          {
-            DrawRect(offscreenBuffer, startx, starty, endx, endy, 0.1f, 0.1f, 0.1f);
+            DrawRect(offscreenBuffer,drawX, drawY, drawX+gameState->World->TileSideInPixels, drawY+gameState->World->TileSideInPixels,1,0,0);
          }
       }
    }
+   float drawX = (float)offscreenBuffer->Width/2.f  + (float)gameState->World->TileSideInPixels * gameState->PlayerPos.TileOffsetX;
+   float drawY = (float)offscreenBuffer->Height/2.f + (float)gameState->World->TileSideInPixels * gameState->PlayerPos.TileOffsetY;
+   DrawCharacter(offscreenBuffer, drawX, drawY, 24.f, 40.f, 1.f, 0.6f, 0.f,1.f);
+   
+   DrawText(offscreenBuffer,16,16,movementString,0.f,1.f,0.f,true);
+   DrawText(offscreenBuffer,16,130,memoryString,0.f,1.f,0.f,true);
+   return;
 
-   float movementSpeed = 5.f * world.TileSideInPixels;
-   float playerHeight = 0.75f * world.TileSideInPixels;
-   float playerWidth = 0.5f * world.TileSideInPixels;
-   float playerHalfWidth = playerWidth / 2.f;
-   float dx = 0.f;
-   float dy = 0.f;
-   if (inputBuffer->ControllerInput[0].Connected)
-   {
+}
 
-      dx = movementSpeed * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageX;
-      dy = movementSpeed * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageY;
+void PlaySinWave(GameState *gameState, GameSoundBuffer *soundBuffer)
+{
+   
+    int16_t ToneVolume = 1000;
+    int WavePeriod = soundBuffer->SamplesPerSecond/gameState->ToneHz;
 
-      if (inputBuffer->ControllerInput[0].LeftThumbButton.IsDown)
-      {
-         gameState->PlayerX = 200.f;
-         gameState->PlayerY = 200.f;
-      }
-   }
+    int16_t *sampleOut = soundBuffer->SampleBuffer;
+    for(int SampleIndex = 0;
+        SampleIndex < soundBuffer->SampleCount;
+        ++SampleIndex)
+    {
+        // TODO(casey): Draw this out for people
+        float SineValue = sinf(gameState->tSin);
+        int16_t SampleValue = (int16_t)(SineValue * ToneVolume);
+        *sampleOut++ = SampleValue;
+        *sampleOut++ = SampleValue;
 
-   if (inputBuffer->KeyboardInput.Key['W'].IsDown)
-   {
-      dy = movementSpeed * gameClocks->UpdateDT;
-   }
-   if (inputBuffer->KeyboardInput.Key['S'].IsDown)
-   {
-      dy = -movementSpeed * gameClocks->UpdateDT;
-   }
-   if (inputBuffer->KeyboardInput.Key['A'].IsDown)
-   {
-      dx = -movementSpeed * gameClocks->UpdateDT;
-   }
-   if (inputBuffer->KeyboardInput.Key['D'].IsDown)
-   {
-      dx = movementSpeed * gameClocks->UpdateDT;
-   }
-   if (inputBuffer->KeyboardInput.Key['B'].IsDown)
-   {
-      gameState->PlayerX = 200.f;
-      gameState->PlayerY = 200.f;
-   }
-
-   float newPlayerX = gameState->PlayerX + dx;
-
-   if (IsWorldPointEmpty(&world, newPlayerX, gameState->PlayerY) && IsWorldPointEmpty(&world, newPlayerX + playerHalfWidth, gameState->PlayerY) && IsWorldPointEmpty(&world, newPlayerX - playerHalfWidth, gameState->PlayerY))
-   {
-      gameState->PlayerX = newPlayerX;
-   }
-   else
-   { //moveing left -- this doesn't work...
-      if (newPlayerX < gameState->PlayerX)
-      {
-         gameState->PlayerX = playerHalfWidth + Floor(gameState->PlayerX / world.TileSideInPixels) * world.TileSideInPixels;
-      }
-      else
-      {
-         gameState->PlayerX = Floor((gameState->PlayerX + world.TileSideInPixels) / world.TileSideInPixels) * world.TileSideInPixels - playerHalfWidth - 0.1f;
-      }
-   }
-
-   float newPlayerY = gameState->PlayerY + dy;
-   if (IsWorldPointEmpty(&world, gameState->PlayerX, newPlayerY) && IsWorldPointEmpty(&world, gameState->PlayerX + playerHalfWidth, newPlayerY) && IsWorldPointEmpty(&world, gameState->PlayerX - playerHalfWidth, newPlayerY))
-   {
-      gameState->PlayerY = newPlayerY;
-   }
-   else
-   {
-      if (newPlayerY < gameState->PlayerY)
-      {
-         gameState->PlayerY = Floor(gameState->PlayerY / world.TileSideInPixels) * world.TileSideInPixels;
-      }
-      else
-      {
-         gameState->PlayerY = Floor((gameState->PlayerY + world.TileSideInPixels) / world.TileSideInPixels) * world.TileSideInPixels - 0.1f;
-      }
-   }
-
-   float pr = 1.0f;
-   float pg = .5f;
-   float pb = 0;
-   float drawx = 0;
-   float drawy = 0;
-
-   GetDrawCoordinates(&world, gameState->PlayerX, gameState->PlayerY, &drawx, &drawy);
-   DrawRect(offscreenBuffer, drawx - playerHalfWidth, drawy - playerHeight, drawx + playerHalfWidth, drawy, pr, pg, pb);
-   char playerInfo[255];
-   snprintf(playerInfo,255,"Player Location: (%0.2f, %0.2f)",gameState->PlayerX,gameState->PlayerY);
-   DrawText(offscreenBuffer,16,16,playerInfo,0.f,1.f,0.f,true);
+        gameState->tSin += 2.0f*PI32*1.0f/(float)WavePeriod;
+        gameState->tSin = fmodf(gameState->tSin, 2.0f * PI32);
+    }
 }
 
 extern "C" void GameGetSoundSamples(ThreadContext *threadContext, GameMemory *gameMemory, GameSoundBuffer *soundBuffer)
 {
-   GameState *gameState = (GameState *)gameMemory->PermanentStorage;
+  GameState *gameState = (GameState *)gameMemory->PermanentStorage;
+  PlaySinWave(gameState, soundBuffer);
 }

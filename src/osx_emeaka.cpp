@@ -7,19 +7,35 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
+#include <errno.h>
+#include <x86intrin.h>
 #include "emeaka.h"
 #include "osx_emeaka.h"
 
 global_variable bool IsRunning;
+global_variable uint64_t Frequency;
+internal uint32_t OSXGetWindowRefreshRate(SDL_Window *window)
+{
+    SDL_DisplayMode mode;
+    int displayIndex = SDL_GetWindowDisplayIndex(window);
+    uint32_t defaultRefreshRate = 60;
+    if (SDL_GetDesktopDisplayMode(displayIndex, &mode) != 0)
+    {
+        return defaultRefreshRate;
+    }
 
-
+    if(mode.refresh_rate == 0)
+    {
+        return defaultRefreshRate;
+    }
+    
+    return (uint32_t)mode.refresh_rate;
+}
 
 internal void OSXPathForFileRelativeToExecutable(char *path, uint32_t pathSize, const char *filename)
 {   
     if(_NSGetExecutablePath(path,&pathSize) == 0)
     {
-        printf("Path Size: %d\n",pathSize);
         char *lastSlash = strrchr(path,'/');
         lastSlash+=1;
         *lastSlash = '\0';
@@ -31,10 +47,13 @@ internal void OSXPathForFileRelativeToExecutable(char *path, uint32_t pathSize, 
         return;
     }
 }
+internal void OSXSetupDynamicGameFilename(OSXDynamicGame *game)
+{
+    OSXPathForFileRelativeToExecutable((char *)&(game->DynamicLibPath),1024,"emeaka_game.dylib");
+}
 
 internal void OSXSetupDynamicGameStruct(OSXDynamicGame *game)
 {
-    OSXPathForFileRelativeToExecutable((char *)&(game->DynamicLibPath),1024,"emeaka_game.dylib");
     game->FileUpdateTime = 0;
     game->DynamicLibrary = 0;
     game->APIFunctions.UpdateAndRender = (GameUpdateAndRenderType *)0;
@@ -52,10 +71,13 @@ internal void OSXSetupDynamicGameStruct(OSXDynamicGame *game)
 internal time_t OSXDynamicGameUpdateTime(OSXDynamicGame *game)
 {
     time_t lastWriteTime = 0;
-    struct stat fileStat;
-    if(stat(game->DynamicLibPath,&fileStat))
+    struct stat fileStat = {};
+    //this doesn't actually work...
+    if(!stat(game->DynamicLibPath,&fileStat))
     {
+        
         lastWriteTime = fileStat.st_mtimespec.tv_sec;
+       // printf("Read Update Time: %ld\n", lastWriteTime);
     }
     return lastWriteTime;
 }
@@ -148,23 +170,6 @@ internal void OSXUpdateWindow(SDL_Window *window, SDL_Renderer *renderer, OSXOff
     SDL_RenderPresent(renderer);
 }
 
-internal void 
-RenderGradient(GameOffscreenBuffer *offscreenBuffer, int blueOffset, int greenOffset)
-{
-    uint8_t *row = (uint8_t *)offscreenBuffer->Memory;
-    for(int y = 0; y < offscreenBuffer->Height; ++y)
-    {
-        uint32_t *pixel = (uint32_t *)row;
-        for(int x = 0; x < offscreenBuffer->Width; ++x)
-        {
-            uint8_t blue = x + blueOffset;
-            uint8_t green = y + greenOffset;
-            *pixel++ = ((green<<8) | blue);
-        }
-        row += offscreenBuffer->Pitch;
-    }
-}
-
 internal bool OSXGetExecutableDirectory(char *exePath, uint32_t exePathSize)
 {
     if(_NSGetExecutablePath(exePath,&exePathSize) == 0)
@@ -182,14 +187,70 @@ internal void OSXUpdateMouse(GameInputBuffer *inputBuffer)
 
 }
 
-internal void OSXUpdateControllers(GameInputBuffer *inputBuffer)
+float S16ToFloatWithDeadzone(int16_t raw_value, int16_t deadzone)
 {
-
+    float ret = 0.0f;
+    if (raw_value > deadzone)
+    {
+        raw_value -= deadzone;
+        ret = (float)raw_value/(float)(0x7FFF-deadzone);
+    }
+    else if (raw_value < -deadzone)
+    {
+        raw_value += deadzone;
+        ret = (float)raw_value/(float)(32768-deadzone);
+    }
+    return ret;
 }
 
-internal void OSXInitializeSound()
+internal void OSXUpdateControllers(GameInputBuffer *inputBuffer, GameInputBuffer *lastInputBuffer, SDL_GameController *controller, size_t idx)
+{
+    const int DEADZONE = 8000;
+    if(controller && SDL_GameControllerGetAttached(controller))
+    {
+        inputBuffer->ControllerInput[idx].Connected = true;
+        inputBuffer->ControllerInput[idx].UpButton.IsDown = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP);
+        
+        int32_t x_value_left = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX);
+        int32_t y_value_left = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY);
+        int32_t x_value_right = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTX);
+        int32_t y_value_right = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTY);
+
+
+        inputBuffer->ControllerInput[idx].LeftStick.AverageX = S16ToFloatWithDeadzone(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX),DEADZONE);
+        inputBuffer->ControllerInput[idx].LeftStick.AverageY = S16ToFloatWithDeadzone(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY),DEADZONE);
+        inputBuffer->ControllerInput[idx].RightStick.AverageX = S16ToFloatWithDeadzone(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTX),DEADZONE);
+        inputBuffer->ControllerInput[idx].RightStick.AverageY = S16ToFloatWithDeadzone(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTY),DEADZONE);
+    }
+    else
+    {
+        inputBuffer->ControllerInput[idx].Connected = false;
+    }
+}
+internal void OSXAudioCallback(void *userData, uint8_t *buffer, int bufferLen)
+{
+    OSXAudioBuffer *audioBuffer = (OSXAudioBuffer *)userData;
+}
+
+internal void OSXInitializeSound(OSXAudioBuffer *audioBuffer)
 {
 
+    audioBuffer->AudioSpec.freq = 48000;
+    audioBuffer->AudioSpec.format = AUDIO_S16;
+    audioBuffer->AudioSpec.channels = 2;
+    audioBuffer->AudioSpec.userdata = (void *)audioBuffer;
+    audioBuffer->AudioSpec.samples = 512; //assume we want to grab information at least as fast as our frame rate, maybe more...
+    audioBuffer->AudioSpec.callback = OSXAudioCallback;
+    audioBuffer->AudioDevice = SDL_OpenAudioDevice(NULL, 0, &audioBuffer->AudioSpec, NULL, 0);
+    if(audioBuffer->AudioDevice == 0)
+    {
+        printf("[ERROR] Failed to open Audio Device: %s\n",SDL_GetError());
+    }
+    else
+    {
+        printf("[INFO] Opened Audio Device : %d\n", audioBuffer->AudioDevice);
+        SDL_PauseAudioDevice(audioBuffer->AudioDevice, 0);
+    }
 }
 internal void OSXSwapInputBuffers(GameInputBuffer **current, GameInputBuffer **old)
 {
@@ -231,9 +292,22 @@ internal void OSXHandleEvent(SDL_Event *event, OSXOffscreenBuffer *offscreenBuff
 
 }
 
+internal float OSXGetSecondsElapsed(uint64_t startTime, uint64_t endTime)
+{
+    return (float)(endTime-startTime)/(float)(Frequency);
+}
+
+internal uint64_t OSXGetCycleCounter()
+{
+    return _rdtsc();
+}
+
 int main(int argc, char** argv)
 {   
-    SDL_Init(SDL_INIT_VIDEO);
+    Frequency = SDL_GetPerformanceFrequency();
+    uint64_t gameStartupTime = SDL_GetPerformanceCounter();
+
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER);
     SDL_Window *window = SDL_CreateWindow("EMEAKA", 
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
@@ -256,47 +330,169 @@ int main(int argc, char** argv)
             currentInputBuffer = &inputBuffer[0];
             lastInputBuffer = &inputBuffer[1];
 
+            GameSoundBuffer gameSoundBuffer = {};
+
             OSXOffscreenBuffer offscreenBuffer = {};
+            OSXAudioBuffer audioBuffer = {};
             GameClocks gameClocks = {};
             GameMemory gameMemory = {};
             ThreadContext threadContext = {};
             gameClocks.UpdateDT = 1.f / 30.f;
             
-            gameMemory.PermanentStorageSize = MegaBytes(64);
+            gameMemory.PermanentStorageSize = MegaBytes(256);
             gameMemory.TransientStorageSize = GigaBytes(2);
             size_t totalMemorySize = gameMemory.PermanentStorageSize + gameMemory.TransientStorageSize;
             gameMemory.PermanentStorage = mmap((void *)TeraBytes(2),totalMemorySize,PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON,-1, 0);
             gameMemory.TransientStorage = (void *)((size_t)gameMemory.PermanentStorage + gameMemory.PermanentStorageSize);
             
+
+            
+
             OSXResizeTexture(&offscreenBuffer, renderer, 960, 540);
+            OSXInitializeSound(&audioBuffer);
+
+            //2 seconds of audio
+            gameSoundBuffer.SampleBuffer = (int16_t*)mmap(0,audioBuffer.AudioSpec.freq * 2 * 2 * audioBuffer.AudioSpec.channels,PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON,-1, 0);
+            gameSoundBuffer.SamplesPerSecond = audioBuffer.AudioSpec.freq;
 
             OSXDynamicGame dynamicGame = {};
+            OSXSetupDynamicGameFilename(&dynamicGame);
             OSXSetupDynamicGameStruct(&dynamicGame);
             OSXLoadGame(&dynamicGame);
 
 
+
+
+            #define MAX_CONTROLLERS (4)
+            SDL_GameController *controllerHandles[MAX_CONTROLLERS] = {};
+            int maxJoysticks = SDL_NumJoysticks();
+            int controllerIndex = 0;
+            for(int i = 0; i < maxJoysticks; ++i)
+            {
+                if(!SDL_IsGameController(i))
+                {
+                    continue;
+                }
+                if(i >= MAX_CONTROLLERS)
+                {
+                    break;
+                }
+                controllerHandles[controllerIndex] = SDL_GameControllerOpen(i);
+                controllerIndex++;
+            }
+
+
+
+
+
+            int gameUpdateHz = 30;
+            float targetFrameTime = 1.f / (float)gameUpdateHz;
+
+
             IsRunning = true;
+
+
+            gameClocks.UpdateDT = targetFrameTime;
+
+
+
+
+
+
+            //setup timing
+            uint64_t lastCounter = SDL_GetPerformanceCounter();
+            uint64_t lastCycleCounter = OSXGetCycleCounter();
+            float lastElapsedTime=0.f;
+            float lastFPS=0.f;
+            uint64_t lastElapsedCycles;
+
+
+
+
+
             while(IsRunning)
             {
+                
                 //if we need to reload the game, let's do it...
                 if(OSXDynamicGameNeedsReImport(&dynamicGame))
                 {
+                    printf("Need game update");
                     OSXUnloadGame(&dynamicGame);
                     OSXLoadGame(&dynamicGame);
                 }
 
+                
                 SDL_Event ev;
                 while(SDL_PollEvent(&ev))
                 {
                     OSXHandleEvent(&ev, &offscreenBuffer, currentInputBuffer); 
                 }
                 OSXUpdateMouse(currentInputBuffer);
-                OSXUpdateControllers(currentInputBuffer);
-
+                for(size_t i = 0; i < MAX_CONTROLLERS; ++i)
+                {
+                    if(controllerHandles[i])
+                    {
+                        OSXUpdateControllers(currentInputBuffer, lastInputBuffer, controllerHandles[i], i);
+                    }
+                }
+                
+                
                 dynamicGame.APIFunctions.UpdateAndRender(&threadContext, &gameMemory, (GameOffscreenBuffer *)&offscreenBuffer, currentInputBuffer, &gameClocks);
-                OSXUpdateWindow(window,renderer,&offscreenBuffer);
+                
+                float megaCycles = (float)lastElapsedCycles / (float)1000000.f;
+                char fpsString[128];
+                snprintf(fpsString,128,"FPS: %0.1f UpdateTime: %0.2fms LastCycles: %0.2f MCycles",lastFPS, 1000.f * lastElapsedTime,megaCycles);
+                dynamicGame.APIFunctions.DrawText((GameOffscreenBuffer *)&offscreenBuffer,16,100,fpsString,1.f,1.f,1.f,true);
+                
+                float preAudioFrameTime = OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter());
+                const size_t sampleAdditionRate = 512;
+                if(targetFrameTime > preAudioFrameTime)
+                {
+                    float remainingFrameTime = targetFrameTime - preAudioFrameTime;
+                    float audioBufferToFill = remainingFrameTime + 2.f * targetFrameTime;
+                    int32_t samplesRequired = (int32_t)((float)audioBuffer.AudioSpec.freq * audioBufferToFill);
+                    int32_t storedSamplesRequired = samplesRequired;
+                    int32_t startingAudioQueueSize = SDL_GetQueuedAudioSize(audioBuffer.AudioDevice) >> 2;
+                    samplesRequired-=startingAudioQueueSize;
+                    if(samplesRequired > 100000)
+                    {
+                        printf("CRAZY");
+                    }
+                    for (int32_t samplesAdded = 0; samplesAdded < samplesRequired; samplesAdded += sampleAdditionRate)
+                    {
+                        printf("Adding Samples %d of %d\n",samplesAdded, samplesRequired);
+                        gameSoundBuffer.SampleCount = sampleAdditionRate;
+                        dynamicGame.APIFunctions.GetSoundSamples(&threadContext, &gameMemory, &gameSoundBuffer);
+                        SDL_QueueAudio(audioBuffer.AudioDevice, (void*)gameSoundBuffer.SampleBuffer, gameSoundBuffer.SampleCount * 4); 
+                    }
+               
+                    char audioString[128];
+                    snprintf(audioString,128,"Starting Queue Size: %d Samples Filled: %zu Needed Time: %0.2fms",startingAudioQueueSize,gameSoundBuffer.SampleCount, 1000.f*audioBufferToFill);
+                    dynamicGame.APIFunctions.DrawText((GameOffscreenBuffer *)&offscreenBuffer,16,116,audioString,1.f,1.f,1.f,true);
+                }
+                else{
+                    printf("Frame Time Fuckup\n");
+                }
 
+                if(OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter()) < targetFrameTime)
+                {
+                    uint32_t timeToSleep = ((targetFrameTime - OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter()))*1000)-1;
+                    SDL_Delay(timeToSleep);
+                    Assert(OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter())<targetFrameTime, "FRAME RATE");
+                    while(OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter())<targetFrameTime)
+                    {}
+                }             
+                uint64_t endCounter = SDL_GetPerformanceCounter();
+                uint64_t endCycleCounter = OSXGetCycleCounter();
+                OSXUpdateWindow(window,renderer,&offscreenBuffer);
                 OSXSwapInputBuffers(&currentInputBuffer, &lastInputBuffer);
+                
+                
+                lastElapsedTime = OSXGetSecondsElapsed(lastCounter,endCounter);
+                lastFPS = 1.f/lastElapsedTime;
+                lastElapsedCycles = endCycleCounter - lastCycleCounter;
+                lastCounter = endCounter;
+                lastCycleCounter = endCycleCounter;
             }
         }
     }

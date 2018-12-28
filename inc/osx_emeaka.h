@@ -12,6 +12,16 @@ struct OSXOffscreenBuffer
   int Pitch;
   SDL_Texture *Texture;
 };
+struct OSXAudioBuffer
+{
+  SDL_AudioSpec AudioSpec;
+  SDL_AudioDeviceID AudioDevice;
+  void *RingBuffer;
+  size_t WriteCursor;
+  size_t PlayCursor;
+  size_t RingBufferLength;
+  size_t ApplicationNextWritePtr;
+};
 
 struct OSXDynamicGame
 {

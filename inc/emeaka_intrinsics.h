@@ -21,29 +21,25 @@ inline float Fmod(float in1, float in2)
 
 inline float Round(float in)
 {
-   return Floor(in);
+   return Floor(in+0.5f);
 }
 
 inline float Abs(float in)
 {
-   if(in < 0.0f)
-   {
-      return in * -1.f;
-   }
-   return in;
+   return fabsf(in);
 }
 
 inline float Sin(float angle)
 {
-   return 0.0f;
+   return sinf(angle);
 }
 
 inline float Cos(float angle)
 {
-   return 0.0f;
+   return cosf(angle);
 }
 
 inline float ATan2(float x, float y)
 {
-   return 0.0f;
+   return atan2f(x,y);
 }
