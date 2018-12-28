@@ -16,11 +16,12 @@ struct OSXAudioBuffer
 {
   SDL_AudioSpec AudioSpec;
   SDL_AudioDeviceID AudioDevice;
+  bool IsPlaying;
   void *RingBuffer;
-  size_t WriteCursor;
-  size_t PlayCursor;
-  size_t RingBufferLength;
-  size_t ApplicationNextWritePtr;
+  size_t WriteCursor; //in bytes
+  size_t PlayCursor; //in bytes
+  size_t RingBufferLength; //in bytes
+  size_t ApplicationNextWritePtr; //in bytes
 };
 
 struct OSXDynamicGame

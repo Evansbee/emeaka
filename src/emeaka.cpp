@@ -237,20 +237,20 @@ void *PushStruct(MemoryArena *arena, size_t size)
 //bool true if position changed.
 bool OffsetAndNormalizePosition(GameWorld *world, Position *pos, float dx, float dy)
 {
-   pos->TileOffsetX += dx;
-   pos->TileOffsetY += dy;
+   pos->TileOffset.X += dx;
+   pos->TileOffset.Y += dy;
 
-   int32_t tileChangeX = (int32_t)Round(pos->TileOffsetX);
-   int32_t tileChangeY = (int32_t)Round(pos->TileOffsetY);
+   int32_t tileChangeX = (int32_t)Round(pos->TileOffset.X);
+   int32_t tileChangeY = (int32_t)Round(pos->TileOffset.Y);
 
-   pos->TileOffsetX -= (float)tileChangeX;
-   pos->TileX += tileChangeX;
+   pos->TileOffset.X -= (float)tileChangeX;
+   pos->Tile.X += tileChangeX;
 
-   pos->TileOffsetY -= (float)tileChangeY;
-   pos->TileY += tileChangeY;
+   pos->TileOffset.Y -= (float)tileChangeY;
+   pos->Tile.Y += tileChangeY;
 
-   pos->TileX = pos->TileX % (world->TileMap->ChunksX * world->TileMap->ChunkSize);
-   pos->TileY = pos->TileY % (world->TileMap->ChunksY * world->TileMap->ChunkSize);
+   pos->Tile.X = pos->Tile.X % (world->TileMap->ChunksX * world->TileMap->ChunkSize);
+   pos->Tile.Y = pos->Tile.Y % (world->TileMap->ChunksY * world->TileMap->ChunkSize);
 
    return (tileChangeX != 0 || tileChangeY != 0);
 }
@@ -341,11 +341,11 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    if (!gameMemory->IsInitialized)
    {
       printf("Initializing In Game Memory...\n");
-      gameState->PlayerPos.TileX = 5;
-      gameState->PlayerPos.TileY = 30;
-      gameState->PlayerPos.TileZ = 0;
-      gameState->PlayerPos.TileOffsetX = 0.0f;
-      gameState->PlayerPos.TileOffsetY = 0.0f;
+      gameState->PlayerPos.Tile.X = 5;
+      gameState->PlayerPos.Tile.Y = 30;
+      gameState->PlayerPos.Tile.Z = 0;
+      gameState->PlayerPos.TileOffset.X = 0.0f;
+      gameState->PlayerPos.TileOffset.Y = 0.0f;
       gameState->ToneHz = 500.f;
       gameState->tSin = 0.f;
       InitializeMemoryArena(&gameState->WorldMemoryArena, (void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)), gameMemory->PermanentStorageSize - sizeof(GameState));
@@ -355,7 +355,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       printf("World Memory Location: 0x%p\n",gameState->World);
       printf("World->TileMap Location: 0x%p\n",gameState->World->TileMap);
    }
-   gameState->ToneHz = 500.f + (250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
+   gameState->ToneHz = 500.f + (-250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
 
    ClearBitmap(offscreenBuffer, 0.1f, 0.2f, 0.1f);
    
@@ -365,7 +365,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    OffsetAndNormalizePosition(gameState->World, &gameState->PlayerPos,dx,dy);
    
    char movementString[1024];
-   snprintf(movementString, 1024, "TileX: %llu\nTileY: %llu\nOffsetX: %0.2f\nOffsetY: %0.2f",gameState->PlayerPos.TileX, gameState->PlayerPos.TileY, gameState->PlayerPos.TileOffsetX, gameState->PlayerPos.TileOffsetY);
+   snprintf(movementString, 1024, "TileX: %llu\nTileY: %llu\nOffsetX: %0.2f\nOffsetY: %0.2f",gameState->PlayerPos.Tile.X, gameState->PlayerPos.Tile.Y, gameState->PlayerPos.TileOffset.X, gameState->PlayerPos.TileOffset.Y);
    char memoryString[1024];
    float UsedMB = (float)gameState->WorldMemoryArena.Used / (1024.f * 1024.f);
    float SizeMB = (float)gameState->WorldMemoryArena.Size / (1024.f * 1024.f);
@@ -381,12 +381,12 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    {
       for(uint64_t x = 0; x < 17; ++x)
       {
-         uint64_t tx = (gameState->PlayerPos.TileX - 8 + x) % (gameState->World->TileMap->ChunksX * gameState->World->TileMap->ChunkSize);
-         uint64_t ty = (gameState->PlayerPos.TileY - 4 + y) %( gameState->World->TileMap->ChunksY * gameState->World->TileMap->ChunkSize);
+         uint64_t tx = (gameState->PlayerPos.Tile.X - 8 + x) % (gameState->World->TileMap->ChunksX * gameState->World->TileMap->ChunkSize);
+         uint64_t ty = (gameState->PlayerPos.Tile.Y - 4 + y) %( gameState->World->TileMap->ChunksY * gameState->World->TileMap->ChunkSize);
          float drawX = drawStartX + (x * gameState->World->TileSideInPixels);
          float drawY = drawStartY + (y * gameState->World->TileSideInPixels);
          uint64_t tileValue = GetTileValueForPosition(gameState, gameState->World, tx, ty) ;
-         if(tx == gameState->PlayerPos.TileX && ty == gameState->PlayerPos.TileY)
+         if(tx == gameState->PlayerPos.Tile.X && ty == gameState->PlayerPos.Tile.Y)
          {
             DrawRect(offscreenBuffer,drawX, drawY, drawX+gameState->World->TileSideInPixels, drawY+gameState->World->TileSideInPixels,1.f,.0f,.0f);
          }
@@ -404,8 +404,8 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
          }
       }
    }
-   float drawX = (float)offscreenBuffer->Width/2.f  + (float)gameState->World->TileSideInPixels * gameState->PlayerPos.TileOffsetX;
-   float drawY = (float)offscreenBuffer->Height/2.f + (float)gameState->World->TileSideInPixels * gameState->PlayerPos.TileOffsetY;
+   float drawX = (float)offscreenBuffer->Width/2.f  + (float)gameState->World->TileSideInPixels * gameState->PlayerPos.TileOffset.X;
+   float drawY = (float)offscreenBuffer->Height/2.f + (float)gameState->World->TileSideInPixels * gameState->PlayerPos.TileOffset.Y;
    DrawCharacter(offscreenBuffer, drawX, drawY, 24.f, 40.f, 1.f, 0.6f, 0.f,1.f);
    
    DrawText(offscreenBuffer,16,16,movementString,0.f,1.f,0.f,true);
@@ -417,7 +417,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
 void PlaySinWave(GameState *gameState, GameSoundBuffer *soundBuffer)
 {
    
-    int16_t ToneVolume = 1000;
+    int16_t ToneVolume = 500;
     int WavePeriod = soundBuffer->SamplesPerSecond/gameState->ToneHz;
 
     int16_t *sampleOut = soundBuffer->SampleBuffer;

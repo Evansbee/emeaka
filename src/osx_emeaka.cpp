@@ -227,29 +227,67 @@ internal void OSXUpdateControllers(GameInputBuffer *inputBuffer, GameInputBuffer
         inputBuffer->ControllerInput[idx].Connected = false;
     }
 }
+
+internal void OSXQueueAudio(OSXAudioBuffer *audioBuffer, GameSoundBuffer *gameSound, size_t byteToStartWriteAt)
+{
+    size_t bytesToWrite = gameSound->SampleCount * 4;//Bytes per Sample * channels
+    size_t region1Size = bytesToWrite;
+    size_t region2Size = 0;
+
+    if(byteToStartWriteAt + bytesToWrite > audioBuffer->RingBufferLength)
+    {
+        region1Size = audioBuffer->RingBufferLength - byteToStartWriteAt;
+        region2Size = bytesToWrite - region1Size;
+    }
+
+    memcpy((void *)((size_t)audioBuffer->RingBuffer + byteToStartWriteAt), gameSound->SampleBuffer, region1Size);
+    memcpy(audioBuffer->RingBuffer, (void *)((size_t)gameSound->SampleBuffer + region1Size), region2Size);
+    audioBuffer->ApplicationNextWritePtr += bytesToWrite;
+}
+
 internal void OSXAudioCallback(void *userData, uint8_t *buffer, int bufferLen)
 {
     OSXAudioBuffer *audioBuffer = (OSXAudioBuffer *)userData;
+    size_t region1Size = bufferLen;
+    size_t region2Size = 0;
+
+    size_t currentPlayCursor = audioBuffer->PlayCursor % audioBuffer->RingBufferLength;
+
+    if(currentPlayCursor + region1Size > audioBuffer->RingBufferLength)
+    {
+        region1Size = audioBuffer->RingBufferLength - currentPlayCursor;
+        region2Size = bufferLen - region1Size;
+    }
+    memcpy((void*)buffer,(void*)((size_t)audioBuffer->RingBuffer + currentPlayCursor), region1Size);
+    memcpy((void *)((size_t)buffer + region1Size), audioBuffer->RingBuffer, region2Size);
+
+    audioBuffer->PlayCursor  = audioBuffer->PlayCursor + bufferLen;
+    audioBuffer->WriteCursor = audioBuffer->PlayCursor + bufferLen;
 }
 
 internal void OSXInitializeSound(OSXAudioBuffer *audioBuffer)
 {
-
+    SDL_AudioSpec receivedAudioSpec = {};
     audioBuffer->AudioSpec.freq = 48000;
     audioBuffer->AudioSpec.format = AUDIO_S16;
     audioBuffer->AudioSpec.channels = 2;
     audioBuffer->AudioSpec.userdata = (void *)audioBuffer;
     audioBuffer->AudioSpec.samples = 512; //assume we want to grab information at least as fast as our frame rate, maybe more...
     audioBuffer->AudioSpec.callback = OSXAudioCallback;
-    audioBuffer->AudioDevice = SDL_OpenAudioDevice(NULL, 0, &audioBuffer->AudioSpec, NULL, 0);
-    if(audioBuffer->AudioDevice == 0)
+    audioBuffer->AudioDevice = SDL_OpenAudioDevice(NULL, 0, &audioBuffer->AudioSpec, &receivedAudioSpec, 0);
+    if(audioBuffer->AudioDevice == 0 || receivedAudioSpec.format != AUDIO_S16)
     {
         printf("[ERROR] Failed to open Audio Device: %s\n",SDL_GetError());
+        SDL_CloseAudio();
     }
     else
     {
+        audioBuffer->AudioSpec = receivedAudioSpec;
         printf("[INFO] Opened Audio Device : %d\n", audioBuffer->AudioDevice);
-        SDL_PauseAudioDevice(audioBuffer->AudioDevice, 0);
+        printf("[INFO] Size: %d\n",audioBuffer->AudioSpec.size);
+        printf("[INFO] Format: %d\n",audioBuffer->AudioSpec.format);
+        printf("[INFO] Samples: %d\n",audioBuffer->AudioSpec.samples);
+        printf("[INFO] Playing...\n");
     }
 }
 internal void OSXSwapInputBuffers(GameInputBuffer **current, GameInputBuffer **old)
@@ -355,6 +393,12 @@ int main(int argc, char** argv)
             gameSoundBuffer.SampleBuffer = (int16_t*)mmap(0,audioBuffer.AudioSpec.freq * 2 * 2 * audioBuffer.AudioSpec.channels,PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON,-1, 0);
             gameSoundBuffer.SamplesPerSecond = audioBuffer.AudioSpec.freq;
 
+            //setup the ring buffer as well// 1 second... check this.
+            audioBuffer.RingBufferLength = audioBuffer.AudioSpec.freq * sizeof(int16_t) * audioBuffer.AudioSpec.channels ;
+            audioBuffer.RingBuffer = (int16_t*)mmap(0,audioBuffer.RingBufferLength,PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON,-1, 0);
+            audioBuffer.PlayCursor = audioBuffer.WriteCursor = 0;
+            audioBuffer.ApplicationNextWritePtr = 0;
+
             OSXDynamicGame dynamicGame = {};
             OSXSetupDynamicGameFilename(&dynamicGame);
             OSXSetupDynamicGameStruct(&dynamicGame);
@@ -443,36 +487,39 @@ int main(int argc, char** argv)
                 char fpsString[128];
                 snprintf(fpsString,128,"FPS: %0.1f UpdateTime: %0.2fms LastCycles: %0.2f MCycles",lastFPS, 1000.f * lastElapsedTime,megaCycles);
                 dynamicGame.APIFunctions.DrawText((GameOffscreenBuffer *)&offscreenBuffer,16,100,fpsString,1.f,1.f,1.f,true);
-                
+
+
+
+
+
                 float preAudioFrameTime = OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter());
-                const size_t sampleAdditionRate = 512;
-                if(targetFrameTime > preAudioFrameTime)
+                SDL_LockAudioDevice(audioBuffer.AudioDevice);
+                
+                size_t byteToLock = (audioBuffer.ApplicationNextWritePtr) % audioBuffer.RingBufferLength;
+                
+                float remainingFrameTime = targetFrameTime - preAudioFrameTime;
+                float audioBufferToFill = remainingFrameTime + targetFrameTime; //buffer through one whole frame
+                if(audioBufferToFill > (2.0 * targetFrameTime) || audioBufferToFill < 0.f){audioBufferToFill = 2.0f * targetFrameTime;}
+                int32_t samplesRequired = (int32_t)((float)audioBuffer.AudioSpec.freq * audioBufferToFill);
+                int32_t bytesRequired = samplesRequired * 4;
+                size_t targetCursor = audioBuffer.PlayCursor + bytesRequired;
+                size_t bytesToWrite = targetCursor - audioBuffer.ApplicationNextWritePtr;
+                gameSoundBuffer.SampleCount = bytesToWrite >> 2;
+                dynamicGame.APIFunctions.GetSoundSamples(&threadContext, &gameMemory, &gameSoundBuffer);
+                OSXQueueAudio(&audioBuffer, &gameSoundBuffer, byteToLock);
+                SDL_UnlockAudioDevice(audioBuffer.AudioDevice);
+
+
+                if(audioBuffer.IsPlaying == false)
                 {
-                    float remainingFrameTime = targetFrameTime - preAudioFrameTime;
-                    float audioBufferToFill = remainingFrameTime + 2.f * targetFrameTime;
-                    int32_t samplesRequired = (int32_t)((float)audioBuffer.AudioSpec.freq * audioBufferToFill);
-                    int32_t storedSamplesRequired = samplesRequired;
-                    int32_t startingAudioQueueSize = SDL_GetQueuedAudioSize(audioBuffer.AudioDevice) >> 2;
-                    samplesRequired-=startingAudioQueueSize;
-                    if(samplesRequired > 100000)
-                    {
-                        printf("CRAZY");
-                    }
-                    for (int32_t samplesAdded = 0; samplesAdded < samplesRequired; samplesAdded += sampleAdditionRate)
-                    {
-                        printf("Adding Samples %d of %d\n",samplesAdded, samplesRequired);
-                        gameSoundBuffer.SampleCount = sampleAdditionRate;
-                        dynamicGame.APIFunctions.GetSoundSamples(&threadContext, &gameMemory, &gameSoundBuffer);
-                        SDL_QueueAudio(audioBuffer.AudioDevice, (void*)gameSoundBuffer.SampleBuffer, gameSoundBuffer.SampleCount * 4); 
-                    }
-               
-                    char audioString[128];
-                    snprintf(audioString,128,"Starting Queue Size: %d Samples Filled: %zu Needed Time: %0.2fms",startingAudioQueueSize,gameSoundBuffer.SampleCount, 1000.f*audioBufferToFill);
-                    dynamicGame.APIFunctions.DrawText((GameOffscreenBuffer *)&offscreenBuffer,16,116,audioString,1.f,1.f,1.f,true);
+                    SDL_PauseAudioDevice(audioBuffer.AudioDevice, 0);
+                    audioBuffer.IsPlaying = true;
                 }
-                else{
-                    printf("Frame Time Fuckup\n");
-                }
+
+                char audioString[128];
+                snprintf(audioString,128,"Samples Filled: %zu Needed Time: %0.2fms",gameSoundBuffer.SampleCount, 1000.f*audioBufferToFill);
+                dynamicGame.APIFunctions.DrawText((GameOffscreenBuffer *)&offscreenBuffer,16,116,audioString,1.f,1.f,1.f,true);
+                
 
                 if(OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter()) < targetFrameTime)
                 {

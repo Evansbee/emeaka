@@ -31,15 +31,35 @@
 #endif
 
 
+template <typename T>
+struct tV2
+{
+  T X;
+  T Y;
+};
+
+typedef tV2<float> V2;
+typedef tV2<int64_t> iV2;
+typedef tV2<uint64_t> uV2;
+
+template <typename T>
+struct tV3{
+  T X;
+  T Y;
+  T Z;
+};
+
+typedef tV3<float> V3;
+typedef tV3<int64_t> iV3;
+typedef tV3<uint64_t> uV3;
+
+
 struct Position
 {
    //let's just store these as raw tiles?
-   uint64_t TileX;
-   uint64_t TileY;
-   uint64_t TileZ;
-   float TileOffsetX; //relative to the tile
-   float TileOffsetY; //relative to the tile, note that 0.0 is the MIDDLE of the tile, -0.5 - 0.5 are the distances.
-   
+   uV3 Tile;
+   V2 TileOffset;
+  
 };
 
 //   ^ +y
@@ -96,6 +116,4 @@ struct GameControl
 {
   bool Running;
 };
-
-
 
