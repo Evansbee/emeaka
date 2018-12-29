@@ -25,7 +25,7 @@
 #define FLOAT_EPSILON 1.19209290E-07F
 
 #if EMEAKA_SLOW
-#define Assert(expression, msg) if(!(expression)) {*(int *)0 = 0;}
+#define Assert(expression, msg) if(!(expression)) {__builtin_trap();}
 #else
 #define Assert(expression, msg)
 #endif

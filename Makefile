@@ -4,9 +4,9 @@ DISABLEDWARNINGS =-Wno-unused-variable -Wno-unused-function -Wno-char-subscripts
 
 GAMECXXFLAGS =
 GAMELDFLAGS =-dynamiclib
-PLATFORMCXXFLAGS =-I /Library/Frameworks/SDL2.framework/Headers
-PLATFORMLDFLAGS =-F /Library/Frameworks -framework SDL2
-COMMONCXXFLAGS =-I inc/ -Wall -Werror -g -std=c++11 -DEMEAKA_INTERNAL -DEMEAKA_DEBUG $(DISABLEDWARNINGS)
+PLATFORMCXXFLAGS =`sdl2-config --cflags`
+PLATFORMLDFLAGS =`sdl2-config --static-libs`
+COMMONCXXFLAGS =-I inc/ -Wall -Werror -g -std=c++11 -DEMEAKA_INTERNAL=1 -DEMEAKA_SLOW=1 -DEMEAKA_DEBUG=1 $(DISABLEDWARNINGS)
 COMMONLDFLAGS =
 
 all:	osx_emeaka emeaka_game

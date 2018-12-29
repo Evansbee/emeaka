@@ -496,7 +496,6 @@ int main(int argc, char** argv)
                 SDL_LockAudioDevice(audioBuffer.AudioDevice);
                 
                 size_t byteToLock = (audioBuffer.ApplicationNextWritePtr) % audioBuffer.RingBufferLength;
-                
                 float remainingFrameTime = targetFrameTime - preAudioFrameTime;
                 float audioBufferToFill = remainingFrameTime + targetFrameTime; //buffer through one whole frame
                 if(audioBufferToFill > (2.0 * targetFrameTime) || audioBufferToFill < 0.f){audioBufferToFill = 2.0f * targetFrameTime;}
@@ -525,7 +524,7 @@ int main(int argc, char** argv)
                 {
                     uint32_t timeToSleep = ((targetFrameTime - OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter()))*1000)-1;
                     SDL_Delay(timeToSleep);
-                    Assert(OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter())<targetFrameTime, "FRAME RATE");
+                    //Assert(OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter())<targetFrameTime, "FRAME RATE");
                     while(OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter())<targetFrameTime)
                     {}
                 }             
