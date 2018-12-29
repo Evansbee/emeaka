@@ -374,19 +374,57 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    
    //8 left, 8 right, 4 up 4 down = 1 row 1 col
 
-   float drawStartX = (float)offscreenBuffer->Width/2.f - ((float)gameState->World->TileSideInPixels * 8.5f);
-   float drawStartY = (float)offscreenBuffer->Height/2.f - ((float)gameState->World->TileSideInPixels * 4.5f);
+   
    
    Position cameraPosition = {};
    cameraPosition.Tile = gameState->PlayerPos.Tile;
-   cameraPosition.TileOffset = V2(0.f,0.f);
+   cameraPosition.TileOffset = gameState->PlayerPos.TileOffset;
 
-   int32_t cameraViewWidth = 17;
-   int32_t cameraViewHeight = 9;
+   int32_t cameraViewWidth = 3;
+   int32_t cameraViewHeight = 3;
 
    float tileSize = gameState->World->TileSideInPixels;
 
+   Position upperLeftTile = cameraPosition, lowerRightTile = cameraPosition;
 
+   
+   float middleX = (float)offscreenBuffer->Width/2.f;
+   float middleY = (float)offscreenBuffer->Height/2.f;
+   float drawStartX = middleX - ((float)gameState->World->TileSideInPixels * (float)cameraViewHeight/-2.f);
+   float drawStartY = middleY - ((float)gameState->World->TileSideInPixels * (float)cameraViewHeight/2.f);
+
+   OffsetAndNormalizePosition(gameState->World, &upperLeftTile, (float)cameraViewWidth/-2.f, (float)cameraViewHeight/2.f);
+   OffsetAndNormalizePosition(gameState->World, &lowerRightTile, (float)cameraViewWidth/2.f, (float)cameraViewHeight/-2.f);
+   
+   //< > and out because of the UINT wrapping we rely on
+   for(float y = (float)cameraViewHeight/2.f; y >= (float)cameraViewHeight/-2.f; y -= 1.0f)
+   {
+      for(float x = (float)cameraViewWidth/-2.f; x <= (float)cameraViewWidth/2.f; x += 1.0f)
+      {
+         Position cursorTile = cameraPosition;
+         OffsetAndNormalizePosition(gameState->World, &cursorTile, x, y);
+         float startx = middleX - (float)(cameraPosition.Tile.X - cursorTile.Tile.X) * tileSize + (cursorTile.TileOffset.X - 0.5f) * tileSize;
+         float endx = middleX - (float)(cameraPosition.Tile.X - cursorTile.Tile.X) * tileSize + (cursorTile.TileOffset.X + 0.5f) * tileSize;
+         float starty = middleY - (float)(cameraPosition.Tile.Y - cursorTile.Tile.Y) * tileSize + (cursorTile.TileOffset.Y - 0.5f) * tileSize;
+         float endy = middleY - (float)(cameraPosition.Tile.Y - cursorTile.Tile.Y) * tileSize + (cursorTile.TileOffset.Y + 0.5f) * tileSize;
+         uint64_t tileValue = GetTileValueForPosition(gameState, gameState->World, cursorTile.Tile.X, cursorTile.Tile.Y);
+
+         if(tileValue == 0)
+         {
+            DrawRect(offscreenBuffer,startx, starty, endx, endy,.1f,.1f,.1f);
+         }
+         else if(tileValue == 1)
+         {
+            DrawRect(offscreenBuffer,startx, starty, endx, endy,1,1,1);
+         }
+         else
+         {
+            DrawRect(offscreenBuffer,startx, starty, endx, endy,1,0,0);
+         }
+      }
+   }
+
+#if 0
    for(uint64_t y = 0; y < 9; ++y)
    {
       for(uint64_t x = 0; x < 17; ++x)
@@ -414,6 +452,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
          }
       }
    }
+#endif
    float drawX = (float)offscreenBuffer->Width/2.f  + (float)gameState->World->TileSideInPixels * gameState->PlayerPos.TileOffset.X;
    float drawY = (float)offscreenBuffer->Height/2.f + (float)gameState->World->TileSideInPixels * gameState->PlayerPos.TileOffset.Y;
    DrawCharacter(offscreenBuffer, drawX, drawY, 24.f, 40.f, 1.f, 0.6f, 0.f,1.f);
