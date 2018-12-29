@@ -25,7 +25,7 @@
 #define FLOAT_EPSILON 1.19209290E-07F
 
 #if EMEAKA_SLOW
-#define Assert(expression, msg) if(!(expression)) {__builtin_trap();}
+#define Assert(expression, msg) if(!(expression)) {*(volatile int *)0 = 0;}
 #else
 #define Assert(expression, msg)
 #endif
@@ -34,6 +34,8 @@
 template <typename T>
 struct tV2
 {
+  tV2():tV2(T(),T()){}
+  tV2(T _x, T _y) : X(_x), Y(_y){}
   T X;
   T Y;
 };
@@ -44,6 +46,8 @@ typedef tV2<uint64_t> uV2;
 
 template <typename T>
 struct tV3{
+  tV3(): tV3(T(), T(),T()){}
+  tV3(T _x, T _y, T _z) : X(_x), Y(_y), Z(_z){}
   T X;
   T Y;
   T Z;

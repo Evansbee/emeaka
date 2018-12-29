@@ -377,6 +377,16 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    float drawStartX = (float)offscreenBuffer->Width/2.f - ((float)gameState->World->TileSideInPixels * 8.5f);
    float drawStartY = (float)offscreenBuffer->Height/2.f - ((float)gameState->World->TileSideInPixels * 4.5f);
    
+   Position cameraPosition = {};
+   cameraPosition.Tile = gameState->PlayerPos.Tile;
+   cameraPosition.TileOffset = V2(0.f,0.f);
+
+   int32_t cameraViewWidth = 17;
+   int32_t cameraViewHeight = 9;
+
+   float tileSize = gameState->World->TileSideInPixels;
+
+
    for(uint64_t y = 0; y < 9; ++y)
    {
       for(uint64_t x = 0; x < 17; ++x)
@@ -439,5 +449,5 @@ void PlaySinWave(GameState *gameState, GameSoundBuffer *soundBuffer)
 extern "C" void GameGetSoundSamples(ThreadContext *threadContext, GameMemory *gameMemory, GameSoundBuffer *soundBuffer)
 {
   GameState *gameState = (GameState *)gameMemory->PermanentStorage;
-  PlaySinWave(gameState, soundBuffer);
+  //PlaySinWave(gameState, soundBuffer);
 }
