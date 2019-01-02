@@ -294,8 +294,13 @@ internal void OSXSwapInputBuffers(GameInputBuffer **current, GameInputBuffer **o
     GameInputBuffer *storage = *old;
     *old = *current;
     *current = storage;
+    for(int i = 0; i < 255; ++i)
+    {
+        (*current)->KeyboardInput.Key[i].HalfTransitions = 0;
+        (*current)->KeyboardInput.Key[i].IsDown = (*old)->KeyboardInput.Key[i].IsDown;
+    }
 }
-internal void OSXHandleEvent(SDL_Event *event, OSXOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer)
+internal void OSXHandleEvent(SDL_Event *event, OSXOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameInputBuffer *lastInputBuffer)
 {
 
     switch (event->type)
@@ -303,6 +308,25 @@ internal void OSXHandleEvent(SDL_Event *event, OSXOffscreenBuffer *offscreenBuff
     case SDL_QUIT:
     {
         IsRunning = false;
+    }
+    break;
+
+    case SDL_KEYDOWN:
+    {
+        if(event->key.keysym.sym < 255)
+        {
+            inputBuffer->KeyboardInput.Key[event->key.keysym.sym].IsDown = true;
+            inputBuffer->KeyboardInput.Key[event->key.keysym.sym].HalfTransitions = 1;
+        }
+    }
+    break;
+    case SDL_KEYUP:
+    {
+        if(event->key.keysym.sym < 255)
+        {
+            inputBuffer->KeyboardInput.Key[event->key.keysym.sym].IsDown = false;
+            inputBuffer->KeyboardInput.Key[event->key.keysym.sym].HalfTransitions = 1;
+        }
     }
     break;
 
@@ -448,7 +472,7 @@ int main(int argc, char **argv)
                 SDL_Event ev;
                 while (SDL_PollEvent(&ev))
                 {
-                    OSXHandleEvent(&ev, &offscreenBuffer, currentInputBuffer);
+                    OSXHandleEvent(&ev, &offscreenBuffer, currentInputBuffer, lastInputBuffer);
                 }
                 OSXUpdateMouse(currentInputBuffer);
                 for (size_t i = 0; i < MAX_CONTROLLERS; ++i)

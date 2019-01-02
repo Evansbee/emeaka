@@ -373,9 +373,20 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
 
    ClearBitmap(offscreenBuffer, 0.1f, 0.2f, 0.1f);
    
-   float dx = 5.f * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageX;
-   float dy = 5.f * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageY;
-   
+   float dx = 0;
+   float dy = 0;
+   if(inputBuffer->KeyboardInput.Key['a'].IsDown || inputBuffer->KeyboardInput.Key['s'].IsDown || inputBuffer->KeyboardInput.Key['d'].IsDown || inputBuffer->KeyboardInput.Key['w'].IsDown)
+   {
+      dx = 5.f * gameClocks->UpdateDT * ((float)inputBuffer->KeyboardInput.Key['d'].IsDown - (float)inputBuffer->KeyboardInput.Key['a'].IsDown);
+      dy = 5.f * gameClocks->UpdateDT * ((float)inputBuffer->KeyboardInput.Key['w'].IsDown - (float)inputBuffer->KeyboardInput.Key['s'].IsDown);
+   }
+   else
+   {
+      dx = 5.f * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageX;
+      dy = 5.f * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageY;
+   }
+
+
    OffsetAndNormalizePosition(gameState->World, &gameState->PlayerPos,dx,dy);
    
    char movementString[1024];
@@ -413,16 +424,17 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    OffsetAndNormalizePosition(gameState->World, &lowerRightTile, (float)cameraViewWidth/2.f, (float)cameraViewHeight/-2.f);
    
    //< > and out because of the UINT wrapping we rely on
+   
    for(uint64_t y = upperLeftTile.Tile.Y; y != (lowerRightTile.Tile.Y - 1); y -= 1)
    {
       for(uint64_t x = upperLeftTile.Tile.X; x != lowerRightTile.Tile.X; x += 1)
       {
-        
-         float startx = middleX - (float)(cameraPosition.Tile.X - cursorTile.Tile.X) * tileSize + (cursorTile.TileOffset.X - 0.5f) * tileSize;
-         float endx = middleX - (float)(cameraPosition.Tile.X - cursorTile.Tile.X) * tileSize + (cursorTile.TileOffset.X + 0.5f) * tileSize;
-         float starty = middleY - (float)(cameraPosition.Tile.Y - cursorTile.Tile.Y) * tileSize + (cursorTile.TileOffset.Y - 0.5f) * tileSize;
-         float endy = middleY - (float)(cameraPosition.Tile.Y - cursorTile.Tile.Y) * tileSize + (cursorTile.TileOffset.Y + 0.5f) * tileSize;
-         uint64_t tileValue = GetTileValueForPosition(gameState, gameState->World, cursorTile.Tile.X, cursorTile.Tile.Y);
+         
+         float startx = middleX - ((float)(cameraPosition.Tile.X - x) * tileSize + (cameraPosition.TileOffset.X-0.5f) * tileSize);
+         float endx = middleX - ((float)(cameraPosition.Tile.X - x) * tileSize + (cameraPosition.TileOffset.X+0.5f) * tileSize);
+         float starty = middleY - ((float)(cameraPosition.Tile.Y - y) * tileSize + (cameraPosition.TileOffset.Y - 0.5f) * tileSize);
+         float endy = middleY - ((float)(cameraPosition.Tile.Y - y) * tileSize + (cameraPosition.TileOffset.Y - 0.5f) * tileSize);
+         uint64_t tileValue = GetTileValueForPosition(gameState, gameState->World, x, y);
 
          if(tileValue == 0)
          {
