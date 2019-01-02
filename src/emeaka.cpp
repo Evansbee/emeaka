@@ -428,12 +428,14 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    printf("Cam: %lld %lld\n",cameraPosition.Tile.X, cameraPosition.Tile.Y);
    printf("UL: %lld %lld\n",upperLeftTile.Tile.X, upperLeftTile.Tile.Y);
    printf("LR: %lld %lld\n",lowerRightTile.Tile.X, lowerRightTile.Tile.Y);
-   for(uint64_t y = upperLeftTile.Tile.Y; y != ((lowerRightTile.Tile.Y - 1)%gameState->World->TileMap->ChunksY); y = (y-1)%gameState->World->TileMap->ChunksY)
+   size_t maxTilesY = gameState->World->TileMap->ChunksY * gameState->World->TileMap->ChunkSize;
+   size_t maxTilesX = gameState->World->TileMap->ChunksX * gameState->World->TileMap->ChunkSize;
+   for(uint64_t y = upperLeftTile.Tile.Y; y != ((lowerRightTile.Tile.Y - 1)%maxTilesY); y = (y-1)%maxTilesY)
    {
-      for(uint64_t x = upperLeftTile.Tile.X; x != ((lowerRightTile.Tile.X+1)%gameState->World->TileMap->ChunksX); x = (x+1)%gameState->World->TileMap->ChunksX)
+      for(uint64_t x = upperLeftTile.Tile.X; x != ((lowerRightTile.Tile.X+1)%maxTilesX); x = (x+1)%maxTilesX)
       {
-         float xOffset = (float)((x - cameraPosition.Tile.X) % (gameState->World->TileMap->ChunkSize * gameState->World->TileMap->ChunksX));
-         float yOffset = (float)((y - cameraPosition.Tile.Y) % (gameState->World->TileMap->ChunkSize * gameState->World->TileMap->ChunksY));
+         float xOffset = (float)((x - cameraPosition.Tile.X));
+         float yOffset = (float)((y - cameraPosition.Tile.Y));
          printf("Xoffset: %0.2f Yoffset: %0.2f\n",xOffset, yOffset);
          float startx = middleX - (xOffset * tileSize + (cameraPosition.TileOffset.X+0.5f) * tileSize);
          float endx = middleX - (xOffset * tileSize + (cameraPosition.TileOffset.X-0.5f) * tileSize);
