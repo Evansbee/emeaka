@@ -45,6 +45,20 @@ extern "C" void DrawRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y
    int _x1 = (int)Round(x1);
    int _y1 = (int)Round(y1);
 
+   if(_x1 < _x0)
+   {
+      int swap = _x0;
+      _x0 = _x1;
+      _x1 = swap;
+   }   
+
+   if(_y1 < _y0)
+   {
+      int swap = _y0;
+      _y0 = _y1;
+      _y1 = swap;
+   }
+
    for (int y = _y0; y < _y1; ++y)
    {
       for (int x = _x0; x < _x1; ++x)
@@ -390,19 +404,20 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    
    float middleX = (float)offscreenBuffer->Width/2.f;
    float middleY = (float)offscreenBuffer->Height/2.f;
-   float drawStartX = middleX - ((float)gameState->World->TileSideInPixels * (float)cameraViewHeight/-2.f);
+   float drawStartX = middleX - ((float)gameState->World->TileSideInPixels * (float)cameraViewWidth/2.f);
    float drawStartY = middleY - ((float)gameState->World->TileSideInPixels * (float)cameraViewHeight/2.f);
+   float drawStopX = middleX + ((float)gameState->World->TileSideInPixels * (float)cameraViewWidth/2.f);
+   float drawStopY = middleY + ((float)gameState->World->TileSideInPixels * (float)cameraViewHeight/2.f);
 
    OffsetAndNormalizePosition(gameState->World, &upperLeftTile, (float)cameraViewWidth/-2.f, (float)cameraViewHeight/2.f);
    OffsetAndNormalizePosition(gameState->World, &lowerRightTile, (float)cameraViewWidth/2.f, (float)cameraViewHeight/-2.f);
    
    //< > and out because of the UINT wrapping we rely on
-   for(float y = (float)cameraViewHeight/2.f; y >= (float)cameraViewHeight/-2.f; y -= 1.0f)
+   for(uint64_t y = upperLeftTile.Tile.Y; y != (lowerRightTile.Tile.Y - 1); y -= 1)
    {
-      for(float x = (float)cameraViewWidth/-2.f; x <= (float)cameraViewWidth/2.f; x += 1.0f)
+      for(uint64_t x = upperLeftTile.Tile.X; x != lowerRightTile.Tile.X; x += 1)
       {
-         Position cursorTile = cameraPosition;
-         OffsetAndNormalizePosition(gameState->World, &cursorTile, x, y);
+        
          float startx = middleX - (float)(cameraPosition.Tile.X - cursorTile.Tile.X) * tileSize + (cursorTile.TileOffset.X - 0.5f) * tileSize;
          float endx = middleX - (float)(cameraPosition.Tile.X - cursorTile.Tile.X) * tileSize + (cursorTile.TileOffset.X + 0.5f) * tileSize;
          float starty = middleY - (float)(cameraPosition.Tile.Y - cursorTile.Tile.Y) * tileSize + (cursorTile.TileOffset.Y - 0.5f) * tileSize;
