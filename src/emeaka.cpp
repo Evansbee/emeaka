@@ -420,22 +420,26 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    float drawStopX = middleX + ((float)gameState->World->TileSideInPixels * (float)cameraViewWidth/2.f);
    float drawStopY = middleY + ((float)gameState->World->TileSideInPixels * (float)cameraViewHeight/2.f);
 
-   OffsetAndNormalizePosition(gameState->World, &upperLeftTile, (float)cameraViewWidth/-2.f, (float)cameraViewHeight/2.f);
-   OffsetAndNormalizePosition(gameState->World, &lowerRightTile, (float)cameraViewWidth/2.f, (float)cameraViewHeight/-2.f);
+   OffsetAndNormalizePosition(gameState->World, &upperLeftTile, -1*(float)cameraViewWidth/2.f, (float)cameraViewHeight/2.f);
+   OffsetAndNormalizePosition(gameState->World, &lowerRightTile, (float)cameraViewWidth/2.f, -1*(float)cameraViewHeight/2.f);
    
    //< > and out because of the UINT wrapping we rely on
-   
-   for(uint64_t y = upperLeftTile.Tile.Y; y != (lowerRightTile.Tile.Y - 1); y -= 1)
+   printf("FRAME\n");
+   printf("Cam: %lld %lld\n",cameraPosition.Tile.X, cameraPosition.Tile.Y);
+   printf("UL: %lld %lld\n",upperLeftTile.Tile.X, upperLeftTile.Tile.Y);
+   printf("LR: %lld %lld\n",lowerRightTile.Tile.X, lowerRightTile.Tile.Y);
+   for(uint64_t y = upperLeftTile.Tile.Y; y != (lowerRightTile.Tile.Y - 1); y = (y-1)%gameState->World->TileMap->ChunksY)
    {
-      for(uint64_t x = upperLeftTile.Tile.X; x != lowerRightTile.Tile.X; x += 1)
+      for(uint64_t x = upperLeftTile.Tile.X; x != (lowerRightTile.Tile.X+1); x = (x+1)%gameState->World->TileMap->ChunksX)
       {
-         
-         float startx = middleX - ((float)(cameraPosition.Tile.X - x) * tileSize + (cameraPosition.TileOffset.X-0.5f) * tileSize);
-         float endx = middleX - ((float)(cameraPosition.Tile.X - x) * tileSize + (cameraPosition.TileOffset.X+0.5f) * tileSize);
-         float starty = middleY - ((float)(cameraPosition.Tile.Y - y) * tileSize + (cameraPosition.TileOffset.Y - 0.5f) * tileSize);
-         float endy = middleY - ((float)(cameraPosition.Tile.Y - y) * tileSize + (cameraPosition.TileOffset.Y - 0.5f) * tileSize);
+         float xOffset = (float)((x - cameraPosition.Tile.X) % gameState->World->TileMap->ChunksX);
+         float yOffset = (float)((y - cameraPosition.Tile.Y) % gameState->World->TileMap->ChunksY);
+         float startx = middleX - (xOffset * tileSize + (cameraPosition.TileOffset.X-0.5f) * tileSize);
+         float endx = middleX - (xOffset * tileSize + (cameraPosition.TileOffset.X+0.5f) * tileSize);
+         float starty = middleY - (yOffset * tileSize + (cameraPosition.TileOffset.Y - 0.5f) * tileSize);
+         float endy = middleY - (yOffset * tileSize + (cameraPosition.TileOffset.Y + 0.5f) * tileSize);
          uint64_t tileValue = GetTileValueForPosition(gameState, gameState->World, x, y);
-
+          printf("%lld %lld %0.1f %0.1f %0.1f %0.1f\n",x,y,startx, starty, endx, endy);
          if(tileValue == 0)
          {
             DrawRect(offscreenBuffer,startx, starty, endx, endy,.1f,.1f,.1f);
@@ -450,6 +454,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
          }
       }
    }
+
 
 #if 0
    for(uint64_t y = 0; y < 9; ++y)
