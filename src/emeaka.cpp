@@ -6,8 +6,24 @@
 #include "emeaka_font.cpp"
 
 //let's agree on
+enum instruction
+{
+   RENDER_CLEARBITMAP,
+};
+struct ClearBitmap{
+  instruction type;
+  float r;
+  float g; 
+  float b; 
+};
 
-
+struct DrawPixel{
+   V2 pixel;
+   float r;
+   float g;
+   float b;
+   float a;
+}
 
 extern "C" void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float g, float b)
 {
@@ -326,7 +342,7 @@ void InitializeWorld(GameState *gameState)
 
 
    gameState->World->TileSideInMeters = 2.f;
-   gameState->World->TileSideInPixels = 64.f;
+   gameState->World->TileSideInPixels = 32.f;
    gameState->World->PixelsPerMeter = gameState->World->TileSideInPixels / gameState->World->TileSideInMeters;
    
    gameState->World->TileMap->Chunks = (Chunk *)PushStruct(&gameState->WorldMemoryArena, 
@@ -400,9 +416,14 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    float SizeMB = (float)gameState->WorldMemoryArena.Size / (1024.f * 1024.f);
    float Percent = (UsedMB/SizeMB) * 100.f;
    snprintf(memoryString, 1024, "World Memory Arena Size: %0.1fMB/%0.1fMB (%0.1f%%)", UsedMB, SizeMB,Percent);
-   
+   int32_t cameraViewWidth = 17;
+   int32_t cameraViewHeight = 9;
    Position cameraPosition = {};
    cameraPosition.Tile = gameState->PlayerPos.Tile;
+   //cameraPosition.Tile.X -= cameraPosition.Tile.X % cameraViewWidth;
+   //cameraPosition.Tile.X += (cameraViewWidth  >> 1);
+   //cameraPosition.Tile.Y -= cameraPosition.Tile.Y % cameraViewHeight;
+   //cameraPosition.Tile.Y += (cameraViewHeight >> 1);
    cameraPosition.TileOffset = V2(0,0);//gameState->PlayerPos.TileOffset;
 
    if(inputBuffer->ControllerInput[0].AButton.IsDown)
@@ -410,8 +431,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       cameraPosition.TileOffset = gameState->PlayerPos.TileOffset;
    }
 
-   int32_t cameraViewWidth = 17;
-   int32_t cameraViewHeight = 9;
+   
 
    float tileSize = gameState->World->TileSideInPixels;
 
@@ -481,9 +501,11 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       }
    }
 
-   float drawX = (float)offscreenBuffer->Width/2.f + (gameState->PlayerPos.TileOffset.X - cameraPosition.TileOffset.X ) * tileSize;
-   float drawY = (float)offscreenBuffer->Height/2.f - (gameState->PlayerPos.TileOffset.Y - cameraPosition.TileOffset.Y ) * tileSize;
-   DrawCharacter(offscreenBuffer, drawX, drawY, 24.f, 40.f, 1.f, 0.6f, 0.f,1.f);
+   float whateverX = (float)(gameState->PlayerPos.Tile.X - cameraPosition.Tile.X) * tileSize;
+   float whateverY = (float)(gameState->PlayerPos.Tile.Y - cameraPosition.Tile.Y) * tileSize;
+   float drawX = (float)offscreenBuffer->Width/2.f + (gameState->PlayerPos.TileOffset.X - cameraPosition.TileOffset.X ) * tileSize + whateverX;
+   float drawY = (float)offscreenBuffer->Height/2.f - (gameState->PlayerPos.TileOffset.Y - cameraPosition.TileOffset.Y ) * tileSize - whateverY;
+   DrawCharacter(offscreenBuffer, drawX, drawY, tileSize * 0.75f, tileSize * 0.9f, 1.f, 0.6f, 0.f,1.f);
    
    DrawText(offscreenBuffer,16,16,movementString,0.f,1.f,0.f,true);
    DrawText(offscreenBuffer,16,130,memoryString,0.f,1.f,0.f,true);
