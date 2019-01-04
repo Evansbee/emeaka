@@ -183,8 +183,18 @@ internal bool OSXGetExecutableDirectory(char *exePath, uint32_t exePathSize)
     }
 }
 
-internal void OSXUpdateMouse(GameInputBuffer *inputBuffer)
+internal void OSXUpdateMouse(SDL_Window *window, GameInputBuffer *inputBuffer, GameInputBuffer *lastInputBuffer)
 {
+    int x, y;
+    uint32_t buttons = SDL_GetMouseState(&x, &y);
+    inputBuffer->MouseInput.LeftButton.IsDown = (SDL_BUTTON(SDL_BUTTON_LEFT) & buttons) != 0;
+    inputBuffer->MouseInput.RightButton.IsDown = (SDL_BUTTON(SDL_BUTTON_RIGHT) & buttons ) != 0;
+    inputBuffer->MouseInput.MiddleButton.IsDown = (SDL_BUTTON(SDL_BUTTON_MIDDLE) & buttons ) != 0;
+    
+    int w, h;
+    SDL_GetWindowSize(window, &w, &h);
+    inputBuffer->MouseInput.MouseLocationX = (float)x/(float)w;
+    inputBuffer->MouseInput.MouseLocationY = 1.0f-(float)y/(float)h;
 }
 
 float S16ToFloatWithDeadzone(int16_t raw_value, int16_t deadzone)
@@ -305,6 +315,14 @@ internal void OSXSwapInputBuffers(GameInputBuffer **current, GameInputBuffer **o
         (*current)->KeyboardInput.Key[i].HalfTransitions = 0;
         (*current)->KeyboardInput.Key[i].IsDown = (*old)->KeyboardInput.Key[i].IsDown;
     }
+
+    (*current)->MouseInput.LeftButton.IsDown = (*old)->MouseInput.LeftButton.IsDown;
+    (*current)->MouseInput.RightButton.IsDown = (*old)->MouseInput.RightButton.IsDown;
+    (*current)->MouseInput.MiddleButton.IsDown = (*old)->MouseInput.MiddleButton.IsDown;
+    (*current)->MouseInput.LeftButton.HalfTransitions = 0;
+    (*current)->MouseInput.RightButton.HalfTransitions = 0;
+    (*current)->MouseInput.MiddleButton.HalfTransitions = 0;
+
 }
 internal void OSXHandleEvent(SDL_Event *event, OSXOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameInputBuffer *lastInputBuffer)
 {
@@ -480,7 +498,7 @@ int main(int argc, char **argv)
                 {
                     OSXHandleEvent(&ev, &offscreenBuffer, currentInputBuffer, lastInputBuffer);
                 }
-                OSXUpdateMouse(currentInputBuffer);
+                OSXUpdateMouse(window, currentInputBuffer, lastInputBuffer);
                 for (size_t i = 0; i < MAX_CONTROLLERS; ++i)
                 {
                     if (controllerHandles[i])

@@ -326,7 +326,7 @@ void InitializeWorld(GameState *gameState)
 
 
    gameState->World->TileSideInMeters = 2.f;
-   gameState->World->TileSideInPixels = 40.f;
+   gameState->World->TileSideInPixels = 64.f;
    gameState->World->PixelsPerMeter = gameState->World->TileSideInPixels / gameState->World->TileSideInMeters;
    
    gameState->World->TileMap->Chunks = (Chunk *)PushStruct(&gameState->WorldMemoryArena, 
