@@ -5,26 +5,6 @@
 
 #include "emeaka_font.cpp"
 
-//let's agree on
-enum instruction
-{
-   RENDER_CLEARBITMAP,
-};
-struct ClearBitmap{
-  instruction type;
-  float r;
-  float g; 
-  float b; 
-};
-
-struct DrawPixel{
-   V2 pixel;
-   float r;
-   float g;
-   float b;
-   float a;
-}
-
 extern "C" void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float g, float b)
 {
    uint8_t _r = (uint8_t)Round(255.f * r);
@@ -381,7 +361,6 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       InitializeMemoryArena(&gameState->WorldMemoryArena, (void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)), gameMemory->PermanentStorageSize - sizeof(GameState));
       InitializeWorld(gameState);
       gameMemory->IsInitialized = true;
-
       printf("World Memory Location: 0x%p\n",gameState->World);
       printf("World->TileMap Location: 0x%p\n",gameState->World->TileMap);
    }

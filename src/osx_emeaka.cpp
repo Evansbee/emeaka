@@ -143,7 +143,60 @@ internal void OSXUnloadGame(OSXDynamicGame *game)
     }
     OSXSetupDynamicGameStruct(game);
 }
+#if EMEAKA_INTERNAL 
+PLATFORM_READ_ENTIRE_FILE(OSXDebugReadEntireFile)
+{
+    //threadcontext, filename
+    DebugFileResult result;
+    result.FileSize = 0;
+    result.Contents = nullptr;
+    SDL_RWops *file = SDL_RWFromFile(filename, "rb");
+    if (file != NULL)
+    {
+        result.FileSize = SDL_RWsize(file);
+        result.Contents = malloc(result.FileSize);
+        size_t read_total = 0, last_read = 1;
+        void *buf = result.Contents;
+        while(read_total < result.FileSize && last_read != 0)
+        {
+            last_read = SDL_RWread(file, buf, 1, result.FileSize - read_total);
+            read_total += last_read;
+            buf = (void *)((char *)buf + last_read);
+        }
+        SDL_RWclose(file);
+        if(read_total != result.FileSize)
+        {
+            printf("FUCKED READ");
+            free(result.Contents);
+            result.Contents = NULL;
+            result.FileSize = 0;
+        }
+    }
+    return result;
+    
+} 
 
+PLATFORM_FREE_FILE_MEMORY(OSXDebugFreeFileMemory) 
+{
+    free(memory);
+    //threadcontext, memory?
+}
+PLATFORM_WRITE_ENTIRE_FILE(OSXDebugWriteEntireFile)
+{
+    //threadContext, filename, memorySize, memory;
+    SDL_RWops *file = SDL_RWFromFile(filename,"wb");
+    if(file != NULL)
+    {
+        if(SDL_RWwrite(file, memory, 1, memorySize) == memorySize)
+        {
+            SDL_RWclose(file);
+            return true;
+        } 
+    }
+    SDL_RWclose(file);
+    return false;
+}
+#endif
 internal void OSXResizeTexture(OSXOffscreenBuffer *offscreenBuffer, SDL_Renderer *renderer, int width, int height)
 {
     if (offscreenBuffer->Memory)
@@ -431,6 +484,9 @@ int main(int argc, char **argv)
             size_t totalMemorySize = gameMemory.PermanentStorageSize + gameMemory.TransientStorageSize;
             gameMemory.PermanentStorage = mmap((void *)TeraBytes(2), totalMemorySize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
             gameMemory.TransientStorage = (void *)((size_t)gameMemory.PermanentStorage + gameMemory.PermanentStorageSize);
+            gameMemory.PlatformFunctions.PlatformFreeFileMemory = OSXDebugFreeFileMemory;
+            gameMemory.PlatformFunctions.PlatformReadEntireFile = OSXDebugReadEntireFile;
+            gameMemory.PlatformFunctions.PlatformWriteEntireFile = OSXDebugWriteEntireFile;
 
             OSXResizeTexture(&offscreenBuffer, renderer, 960, 540);
             OSXInitializeSound(&audioBuffer);
