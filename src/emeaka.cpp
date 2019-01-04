@@ -403,7 +403,12 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    
    Position cameraPosition = {};
    cameraPosition.Tile = gameState->PlayerPos.Tile;
-   cameraPosition.TileOffset = gameState->PlayerPos.TileOffset;
+   cameraPosition.TileOffset = V2(0,0);//gameState->PlayerPos.TileOffset;
+
+   if(inputBuffer->ControllerInput[0].AButton.IsDown)
+   {
+      cameraPosition.TileOffset = gameState->PlayerPos.TileOffset;
+   }
 
    int32_t cameraViewWidth = 17;
    int32_t cameraViewHeight = 9;
@@ -476,8 +481,8 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       }
    }
 
-   float drawX = (float)offscreenBuffer->Width/2.f;
-   float drawY = (float)offscreenBuffer->Height/2.f;
+   float drawX = (float)offscreenBuffer->Width/2.f + (gameState->PlayerPos.TileOffset.X - cameraPosition.TileOffset.X ) * tileSize;
+   float drawY = (float)offscreenBuffer->Height/2.f - (gameState->PlayerPos.TileOffset.Y - cameraPosition.TileOffset.Y ) * tileSize;
    DrawCharacter(offscreenBuffer, drawX, drawY, 24.f, 40.f, 1.f, 0.6f, 0.f,1.f);
    
    DrawText(offscreenBuffer,16,16,movementString,0.f,1.f,0.f,true);

@@ -220,6 +220,12 @@ internal void OSXUpdateControllers(GameInputBuffer *inputBuffer, GameInputBuffer
         inputBuffer->ControllerInput[idx].LeftStick.AverageY = S16ToFloatWithDeadzone(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY), DEADZONE);
         inputBuffer->ControllerInput[idx].RightStick.AverageX = S16ToFloatWithDeadzone(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTX), DEADZONE);
         inputBuffer->ControllerInput[idx].RightStick.AverageY = S16ToFloatWithDeadzone(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTY), DEADZONE);
+
+        inputBuffer->ControllerInput[idx].AButton.IsDown = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A);
+        if(inputBuffer->ControllerInput[idx].AButton.IsDown != lastInputBuffer->ControllerInput[idx].AButton.IsDown)
+        {
+            inputBuffer->ControllerInput[idx].AButton.HalfTransitions = 1;
+        }
     }
     else
     {
