@@ -158,7 +158,10 @@ internal void _DrawLineLow(GameOffscreenBuffer *offscreenBuffer, float x0, float
       D = D + 2.f * dy;
    }
 }
-
+extern "C" void DrawBitmap(GameOffscreenBuffer *offscreenBuffer, V2 position, size_t height, size_t width, void* memory)
+{
+   
+}
 extern "C" void DrawLine(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
 {
    if (Abs(y1 - y0) < Abs(x1 - x0))

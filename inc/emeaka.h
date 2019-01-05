@@ -121,3 +121,20 @@ struct GameControl
   bool Running;
 };
 
+#pragma packed
+struct BitmapHeader
+{
+  
+
+};
+struct Bitmap
+{
+  char Signature[2];
+  uint16_t Unused1;
+  uint32_t FileSize;
+  uint16_t Reserved1;
+  uint16_t Reserved2;
+  uint32_t FileOffsetToPixelArray;
+  BitmapHeader Header;
+  void *Data;
+};
