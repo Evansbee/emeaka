@@ -121,20 +121,31 @@ struct GameControl
   bool Running;
 };
 
-#pragma packed
 struct BitmapHeader
 {
+  uint32_t HeaderSize;
+  int32_t ImageWidth;
+  int32_t ImageHeight;
+  uint16_t Planes;
+  uint16_t BitsPerPixel;
+  uint32_t Compression;
+  uint32_t XPixelsPerMeter;
+  uint32_t YPixelsPerMeter;
+  uint32_t ColorsInColorTable;
+  uint32_t ImportantColorCount;
+  uint32_t RedChannelBitmask;
+  uint32_t GreenChannelBitmask;
+  uint32_t BlueChannelBitmask;
+  uint32_t AlphaChannelBitmask;
   
-
-};
+}__attribute__((packed));
 struct Bitmap
 {
   char Signature[2];
-  uint16_t Unused1;
   uint32_t FileSize;
   uint16_t Reserved1;
   uint16_t Reserved2;
   uint32_t FileOffsetToPixelArray;
   BitmapHeader Header;
   void *Data;
-};
+}__attribute__((packed));
