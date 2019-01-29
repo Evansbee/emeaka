@@ -2,6 +2,24 @@
 #include <cstdint>
 
 //types
+enum KeyCode : size_t 
+{
+  A = 0,
+  B, C, D, E, F, G, H, I, J, K, L, M, N,
+  O, P, Q, R, S, T, U, V, W, X, Y, Z,
+  K1, K2, K3, K4, K5, K6, K7, K8, K9, K0,
+  F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+  N1, N2, N3, N4, N5, N6, N7, N8, N9, N0,
+  RETURN, ESC, BACKSPACE, TAB, SPACE,
+  LEFTBRACKET, RIGHTBRACKET, SEMICOLON, APOSTROPHE, COMMA,
+  PERIOD, SLASH, BACKSLASH, KMINUS, KEQUAL, GRAVE, 
+  NPLUS, NMINUS, NENTER, NEQUAL, NDIVIDE, NMULTIPLY, NPERIOD,
+  LCTRL, RCTRL, LALT, RALT, LSHIFT, RSHIFT, LGUI, RGUI, 
+  PGDOWN, PGUP, HOME, END, DELETE,
+  UP, DOWN, LEFT, RIGHT, PAUSE, INSERT, 
+  KEY_TABLE_SIZE
+};
+
 struct GameOffscreenBuffer
 {
   void *Memory;
@@ -66,16 +84,7 @@ struct GameControllerInput
 
 struct GameKeyboardInput
 {
-  GameButtonState ShiftButton;
-  GameButtonState AltButton;
-  GameButtonState EscapeButton;
-  GameButtonState UpArrow;
-  GameButtonState DownArrow;
-  GameButtonState RightArrow;
-  GameButtonState LeftArrow;
-  GameButtonState CtrlButton;
-  GameButtonState Key[255];
-  GameButtonState FKey[12];
+  GameButtonState Key[KeyCode::KEY_TABLE_SIZE];
 };
 
 struct GameMouseInput

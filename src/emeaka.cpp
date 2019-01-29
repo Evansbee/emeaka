@@ -373,10 +373,10 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    
    float dx = 0;
    float dy = 0;
-   if(inputBuffer->KeyboardInput.Key['a'].IsDown || inputBuffer->KeyboardInput.Key['s'].IsDown || inputBuffer->KeyboardInput.Key['d'].IsDown || inputBuffer->KeyboardInput.Key['w'].IsDown)
+   if(inputBuffer->KeyboardInput.Key[KeyCode::A].IsDown || inputBuffer->KeyboardInput.Key[KeyCode::S].IsDown || inputBuffer->KeyboardInput.Key[KeyCode::D].IsDown || inputBuffer->KeyboardInput.Key[KeyCode::W].IsDown)
    {
-      dx = 5.f * gameClocks->UpdateDT * ((float)inputBuffer->KeyboardInput.Key['d'].IsDown - (float)inputBuffer->KeyboardInput.Key['a'].IsDown);
-      dy = 5.f * gameClocks->UpdateDT * ((float)inputBuffer->KeyboardInput.Key['w'].IsDown - (float)inputBuffer->KeyboardInput.Key['s'].IsDown);
+      dx = 5.f * gameClocks->UpdateDT * ((float)inputBuffer->KeyboardInput.Key[KeyCode::D].IsDown - (float)inputBuffer->KeyboardInput.Key[KeyCode::A].IsDown);
+      dy = 5.f * gameClocks->UpdateDT * ((float)inputBuffer->KeyboardInput.Key[KeyCode::W].IsDown - (float)inputBuffer->KeyboardInput.Key[KeyCode::S].IsDown);
    }
    else
    {

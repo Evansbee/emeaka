@@ -363,7 +363,7 @@ internal void OSXSwapInputBuffers(GameInputBuffer **current, GameInputBuffer **o
     GameInputBuffer *storage = *old;
     *old = *current;
     *current = storage;
-    for(int i = 0; i < 255; ++i)
+    for(size_t i = 0; i < KeyCode::KEY_TABLE_SIZE; ++i)
     {
         (*current)->KeyboardInput.Key[i].HalfTransitions = 0;
         (*current)->KeyboardInput.Key[i].IsDown = (*old)->KeyboardInput.Key[i].IsDown;
@@ -377,6 +377,125 @@ internal void OSXSwapInputBuffers(GameInputBuffer **current, GameInputBuffer **o
     (*current)->MouseInput.MiddleButton.HalfTransitions = 0;
 
 }
+
+bool OSXGetKeycode(SDL_Scancode scancode, KeyCode& emeaka_code)
+{
+    switch(scancode)
+    {
+    case SDL_SCANCODE_A: emeaka_code = KeyCode::A; return true;
+    case SDL_SCANCODE_B: emeaka_code = KeyCode::B; return true;
+    case SDL_SCANCODE_C: emeaka_code = KeyCode::C; return true;
+    case SDL_SCANCODE_D: emeaka_code = KeyCode::D; return true;
+    case SDL_SCANCODE_E: emeaka_code = KeyCode::E; return true;
+    case SDL_SCANCODE_F: emeaka_code = KeyCode::F; return true;
+    case SDL_SCANCODE_G: emeaka_code = KeyCode::G; return true;
+    case SDL_SCANCODE_H: emeaka_code = KeyCode::H; return true;
+    case SDL_SCANCODE_I: emeaka_code = KeyCode::I; return true;
+    case SDL_SCANCODE_J: emeaka_code = KeyCode::J; return true;
+    case SDL_SCANCODE_K: emeaka_code = KeyCode::K; return true;
+    case SDL_SCANCODE_L: emeaka_code = KeyCode::L; return true;
+    case SDL_SCANCODE_M: emeaka_code = KeyCode::M; return true;
+    case SDL_SCANCODE_N: emeaka_code = KeyCode::N; return true;
+    case SDL_SCANCODE_O: emeaka_code = KeyCode::O; return true;
+    case SDL_SCANCODE_P: emeaka_code = KeyCode::P; return true;
+    case SDL_SCANCODE_Q: emeaka_code = KeyCode::Q; return true;
+    case SDL_SCANCODE_R: emeaka_code = KeyCode::R; return true;
+    case SDL_SCANCODE_S: emeaka_code = KeyCode::S; return true;
+    case SDL_SCANCODE_T: emeaka_code = KeyCode::T; return true;
+    case SDL_SCANCODE_U: emeaka_code = KeyCode::U; return true;
+    case SDL_SCANCODE_V: emeaka_code = KeyCode::V; return true;
+    case SDL_SCANCODE_W: emeaka_code = KeyCode::W; return true;
+    case SDL_SCANCODE_X: emeaka_code = KeyCode::X; return true;
+    case SDL_SCANCODE_Y: emeaka_code = KeyCode::Y; return true;
+    case SDL_SCANCODE_Z: emeaka_code = KeyCode::Z; return true;
+
+    case SDL_SCANCODE_1: emeaka_code = KeyCode::K1; return true;
+    case SDL_SCANCODE_2: emeaka_code = KeyCode::K2; return true;
+    case SDL_SCANCODE_3: emeaka_code = KeyCode::K3; return true;
+    case SDL_SCANCODE_4: emeaka_code = KeyCode::K4; return true;
+    case SDL_SCANCODE_5: emeaka_code = KeyCode::K5; return true;
+    case SDL_SCANCODE_6: emeaka_code = KeyCode::K6; return true;
+    case SDL_SCANCODE_7: emeaka_code = KeyCode::K7; return true;
+    case SDL_SCANCODE_8: emeaka_code = KeyCode::K8; return true;
+    case SDL_SCANCODE_9: emeaka_code = KeyCode::K9; return true;
+    case SDL_SCANCODE_0: emeaka_code = KeyCode::K0; return true;
+
+    case SDL_SCANCODE_F1: emeaka_code = KeyCode::F1; return true;
+    case SDL_SCANCODE_F2: emeaka_code = KeyCode::F2; return true;
+    case SDL_SCANCODE_F3: emeaka_code = KeyCode::F3; return true;
+    case SDL_SCANCODE_F4: emeaka_code = KeyCode::F4; return true;
+    case SDL_SCANCODE_F5: emeaka_code = KeyCode::F5; return true;
+    case SDL_SCANCODE_F6: emeaka_code = KeyCode::F6; return true;
+    case SDL_SCANCODE_F7: emeaka_code = KeyCode::F7; return true;
+    case SDL_SCANCODE_F8: emeaka_code = KeyCode::F8; return true;
+    case SDL_SCANCODE_F9: emeaka_code = KeyCode::F9; return true;
+    case SDL_SCANCODE_F10: emeaka_code = KeyCode::F10; return true;
+    case SDL_SCANCODE_F11: emeaka_code = KeyCode::F11; return true;
+    case SDL_SCANCODE_F12: emeaka_code = KeyCode::F12; return true;
+
+    case SDL_SCANCODE_KP_1: emeaka_code = KeyCode::N1; return true;
+    case SDL_SCANCODE_KP_2: emeaka_code = KeyCode::N2; return true;
+    case SDL_SCANCODE_KP_3: emeaka_code = KeyCode::N3; return true;
+    case SDL_SCANCODE_KP_4: emeaka_code = KeyCode::N4; return true;
+    case SDL_SCANCODE_KP_5: emeaka_code = KeyCode::N5; return true;
+    case SDL_SCANCODE_KP_6: emeaka_code = KeyCode::N6; return true;
+    case SDL_SCANCODE_KP_7: emeaka_code = KeyCode::N7; return true;
+    case SDL_SCANCODE_KP_8: emeaka_code = KeyCode::N8; return true;
+    case SDL_SCANCODE_KP_9: emeaka_code = KeyCode::N9; return true;
+    case SDL_SCANCODE_KP_0: emeaka_code = KeyCode::N0; return true;
+
+    case SDL_SCANCODE_RETURN: emeaka_code = KeyCode::RETURN; return true;
+    case SDL_SCANCODE_ESCAPE: emeaka_code = KeyCode::ESC; return true;
+    case SDL_SCANCODE_BACKSPACE: emeaka_code = KeyCode::BACKSPACE; return true;
+    case SDL_SCANCODE_TAB: emeaka_code = KeyCode::TAB; return true;
+    case SDL_SCANCODE_SPACE: emeaka_code = KeyCode::SPACE; return true;
+
+    case SDL_SCANCODE_LEFTBRACKET: emeaka_code = KeyCode::LEFTBRACKET; return true;
+    case SDL_SCANCODE_RIGHTBRACKET: emeaka_code = KeyCode::RIGHTBRACKET; return true;
+    case SDL_SCANCODE_SEMICOLON: emeaka_code = KeyCode::SEMICOLON; return true;
+    case SDL_SCANCODE_APOSTROPHE: emeaka_code = KeyCode::APOSTROPHE; return true;
+    case SDL_SCANCODE_COMMA: emeaka_code = KeyCode::COMMA; return true;
+    case SDL_SCANCODE_PERIOD: emeaka_code = KeyCode::PERIOD; return true;
+    case SDL_SCANCODE_SLASH: emeaka_code = KeyCode::SLASH; return true;
+    case SDL_SCANCODE_BACKSLASH: emeaka_code = KeyCode::BACKSLASH; return true;
+    case SDL_SCANCODE_MINUS: emeaka_code = KeyCode::KMINUS; return true;
+    case SDL_SCANCODE_EQUALS: emeaka_code = KeyCode::KEQUAL; return true;
+    case SDL_SCANCODE_GRAVE: emeaka_code = KeyCode::GRAVE; return true;
+
+    case SDL_SCANCODE_KP_PLUS: emeaka_code = KeyCode::NPLUS; return true;
+    case SDL_SCANCODE_KP_MINUS: emeaka_code = KeyCode::NMINUS; return true;
+    case SDL_SCANCODE_KP_ENTER: emeaka_code = KeyCode::NENTER; return true;
+    case SDL_SCANCODE_KP_EQUALS : emeaka_code = KeyCode::NEQUAL; return true;
+    case SDL_SCANCODE_KP_DIVIDE: emeaka_code = KeyCode::NDIVIDE; return true;
+    case SDL_SCANCODE_KP_MULTIPLY: emeaka_code = KeyCode::NMULTIPLY; return true;
+    case SDL_SCANCODE_KP_PERIOD: emeaka_code = KeyCode::NPERIOD; return true;
+
+    case SDL_SCANCODE_PAGEDOWN: emeaka_code = KeyCode::PGDOWN; return true;
+    case SDL_SCANCODE_PAGEUP: emeaka_code = KeyCode::PGUP; return true;
+    case SDL_SCANCODE_HOME: emeaka_code = KeyCode::HOME; return true;
+    case SDL_SCANCODE_END: emeaka_code = KeyCode::END; return true;
+    case SDL_SCANCODE_DELETE: emeaka_code = KeyCode::DELETE; return true;
+    case SDL_SCANCODE_UP: emeaka_code = KeyCode::UP; return true;
+    case SDL_SCANCODE_DOWN: emeaka_code = KeyCode::DOWN; return true;
+    case SDL_SCANCODE_LEFT: emeaka_code = KeyCode::LEFT; return true;
+    case SDL_SCANCODE_RIGHT: emeaka_code = KeyCode::RIGHT; return true;
+    case SDL_SCANCODE_PAUSE: emeaka_code = KeyCode::PAUSE; return true;
+    case SDL_SCANCODE_INSERT: emeaka_code = KeyCode::INSERT; return true;
+    
+    case SDL_SCANCODE_LCTRL: emeaka_code = KeyCode::LCTRL; return true;
+    case SDL_SCANCODE_LSHIFT: emeaka_code = KeyCode::LSHIFT; return true;
+    case SDL_SCANCODE_LALT: emeaka_code = KeyCode::LALT; return true;
+    case SDL_SCANCODE_LGUI: emeaka_code = KeyCode::LGUI; return true;
+    case SDL_SCANCODE_RCTRL: emeaka_code = KeyCode::RCTRL; return true;
+    case SDL_SCANCODE_RSHIFT: emeaka_code = KeyCode::RSHIFT; return true;
+    case SDL_SCANCODE_RALT: emeaka_code = KeyCode::RALT; return true;
+    case SDL_SCANCODE_RGUI: emeaka_code = KeyCode::RGUI; return true;
+    default: 
+        return false;
+    } 
+    return false;
+}
+
 internal void OSXHandleEvent(SDL_Event *event, OSXOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameInputBuffer *lastInputBuffer)
 {
 
@@ -389,21 +508,16 @@ internal void OSXHandleEvent(SDL_Event *event, OSXOffscreenBuffer *offscreenBuff
     break;
 
     case SDL_KEYDOWN:
-    {
-        if(event->key.keysym.sym < 255)
-        {
-            inputBuffer->KeyboardInput.Key[event->key.keysym.sym].IsDown = true;
-            inputBuffer->KeyboardInput.Key[event->key.keysym.sym].HalfTransitions = 1;
-        }
-    }
-    break;
     case SDL_KEYUP:
     {
-        if(event->key.keysym.sym < 255)
+        KeyCode emeaka_code;
+        if(OSXGetKeycode(event->key.keysym.scancode, emeaka_code))
         {
-            inputBuffer->KeyboardInput.Key[event->key.keysym.sym].IsDown = false;
-            inputBuffer->KeyboardInput.Key[event->key.keysym.sym].HalfTransitions = 1;
+            printf("EVENT %d\n",(int32_t)event->key.keysym.scancode);
+            inputBuffer->KeyboardInput.Key[emeaka_code].IsDown = event->type == SDL_KEYDOWN;
+            inputBuffer->KeyboardInput.Key[emeaka_code].HalfTransitions = 1;
         }
+
     }
     break;
 
