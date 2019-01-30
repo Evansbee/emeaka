@@ -85,6 +85,9 @@ struct GameControllerInput
 struct GameKeyboardInput
 {
   GameButtonState Key[KeyCode::KEY_TABLE_SIZE];
+  
+  char TextInput[32];
+  static const size_t TextInputSize = 32;
 };
 
 struct GameMouseInput

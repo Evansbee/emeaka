@@ -369,6 +369,8 @@ internal void OSXSwapInputBuffers(GameInputBuffer **current, GameInputBuffer **o
         (*current)->KeyboardInput.Key[i].IsDown = (*old)->KeyboardInput.Key[i].IsDown;
     }
 
+    (*current)->KeyboardInput.TextInput[0] = '\0';
+
     (*current)->MouseInput.LeftButton.IsDown = (*old)->MouseInput.LeftButton.IsDown;
     (*current)->MouseInput.RightButton.IsDown = (*old)->MouseInput.RightButton.IsDown;
     (*current)->MouseInput.MiddleButton.IsDown = (*old)->MouseInput.MiddleButton.IsDown;
@@ -513,11 +515,15 @@ internal void OSXHandleEvent(SDL_Event *event, OSXOffscreenBuffer *offscreenBuff
         KeyCode emeaka_code;
         if(OSXGetKeycode(event->key.keysym.scancode, emeaka_code))
         {
-            printf("EVENT %d\n",(int32_t)event->key.keysym.scancode);
+            
             inputBuffer->KeyboardInput.Key[emeaka_code].IsDown = event->type == SDL_KEYDOWN;
-            inputBuffer->KeyboardInput.Key[emeaka_code].HalfTransitions = 1;
+            inputBuffer->KeyboardInput.Key[emeaka_code].HalfTransitions = (uint32_t)(lastInputBuffer->KeyboardInput.Key[emeaka_code].IsDown != inputBuffer->KeyboardInput.Key[emeaka_code].IsDown);
         }
-
+    }
+    break;
+    case SDL_TEXTINPUT:
+    {      
+        strncat(inputBuffer->KeyboardInput.TextInput, event->text.text, GameKeyboardInput::TextInputSize);
     }
     break;
 
