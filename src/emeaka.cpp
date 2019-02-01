@@ -32,10 +32,7 @@ extern "C" void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2f p, float r
    }
 }
 
-extern "C" void StrokeRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float fillr, float fillg, float fillb, float stroker, float strokeg, float strokeb)
-{
-   
-}
+
 
 extern "C" void DrawCircle(GameOffscreenBuffer *offscreenBuffer, float cx, float cy, float radius, float r, float g, float b)
 {
@@ -319,7 +316,13 @@ extern "C" void DrawRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y
       }
    }
 }
-
+extern "C" void StrokeRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
+{
+   DrawLine(offscreenBuffer,vec2f(x0,y0), vec2f(x1,y0),r,g,b);
+   DrawLine(offscreenBuffer,vec2f(x1,y0), vec2f(x1,y1),r,g,b);
+   DrawLine(offscreenBuffer,vec2f(x1,y1), vec2f(x0,y1),r,g,b);
+   DrawLine(offscreenBuffer,vec2f(x0,y1), vec2f(x0,y0),r,g,b);
+}
 
 
 
@@ -499,7 +502,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    //cameraPosition.Tile.X += (cameraViewWidth  >> 1);
    //cameraPosition.Tile.Y -= cameraPosition.Tile.Y % cameraViewHeight;
    //cameraPosition.Tile.Y += (cameraViewHeight >> 1);
-   cameraPosition.TileOffset = vec2f(0,0);//gameState->PlayerPos.TileOffset;
+   cameraPosition.TileOffset = gameState->PlayerPos.TileOffset;
 
    if(inputBuffer->ControllerInput[0].AButton.IsDown)
    {
@@ -557,11 +560,8 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
          
          uint64_t tileValue = GetTileValueForPosition(gameState, gameState->World, vec2u(xtile,ytile));
          
-         if(xtile == gameState->PlayerPos.Tile.x && ytile == gameState->PlayerPos.Tile.y)
-         {
-            DrawRect(offscreenBuffer,startx, starty, endx, endy,1,0,0);
-         }
-         else if(tileValue == 0)
+         
+         if(tileValue == 0)
          {
             DrawRect(offscreenBuffer,startx, starty, endx, endy,.1f,.1f,.1f);
          }
@@ -572,6 +572,11 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
          else 
          {
             DrawRect(offscreenBuffer,startx, starty, endx, endy,1,0,1);
+         }
+
+         if(xtile == gameState->PlayerPos.Tile.x && ytile == gameState->PlayerPos.Tile.y)
+         {
+            StrokeRect(offscreenBuffer,startx+1, starty-1, endx-1, endy+1,1,0,0);
          }
       }
    }
