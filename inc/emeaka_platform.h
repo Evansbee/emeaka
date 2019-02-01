@@ -197,6 +197,9 @@ typedef GAME_DRAW_CHAR(GameDrawCharType);
 #define GAME_DRAW_TEXT(name) void name(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, char* text, float r, float g, float b, bool shadow)
 typedef GAME_DRAW_TEXT(GameDrawTextType);
 
+#define GAME_DRAW_TRIANGLE(name) void name(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b)
+typedef GAME_DRAW_TRIANGLE(GameDrawTriangleType);
+
 struct GameAPI {
   GameUpdateAndRenderType *UpdateAndRender;
   GameGetSoundSamplesType *GetSoundSamples;
@@ -207,4 +210,5 @@ struct GameAPI {
   GameDrawLineType *DrawLine;
   GameDrawCharType *DrawChar;
   GameDrawTextType *DrawText;
+  GameDrawTriangleType *DrawTriangle;
 };

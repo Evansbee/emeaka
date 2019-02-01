@@ -573,7 +573,7 @@ int main(int argc, char **argv)
                                           SDL_WINDOWPOS_UNDEFINED,
                                           960,
                                           540,
-                                          SDL_WINDOW_RESIZABLE);
+                                          SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 
     if (window)
     {

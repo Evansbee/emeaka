@@ -34,6 +34,8 @@ extern "C" void DrawPixel(GameOffscreenBuffer *offscreenBuffer, float x, float y
    }
 }
 
+
+
 extern "C" void DrawRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
 {
    int _x0 = (int)Round(x0);
@@ -230,6 +232,77 @@ extern "C" void DrawText(GameOffscreenBuffer *offscreenBuffer, float x, float y,
       }
    }
 }
+
+void _FillTopFlatTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b)
+{
+   float invslope1 = (x2 - x0) / (y2 - y0);
+  float invslope2 = (x2 - x1) / (y2 - y1);
+
+  float curx1 = x2;
+  float curx2 = x2;
+
+  for (int scanlineY = (int)Round(y2); scanlineY > (int)Round(y0); scanlineY--)
+  {
+       DrawLine(offscreenBuffer,curx1,(float)scanlineY,curx2,(float)scanlineY,r,g,b);
+
+    curx1 -= invslope1;
+    curx2 -= invslope2;
+  }
+}
+void _FillBottomFlatTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b)
+{
+  float invslope1 = (x1 - x0) / (y1 - y0);
+  float invslope2 = (x2 - x0) / (y2 - y0);
+
+  float curx1 = x0;
+  float curx2 = x0;
+
+  for (int scanlineY = (int)Round(y0); scanlineY <= (int)Round(y1); scanlineY++)
+  {
+   DrawLine(offscreenBuffer,curx1,(float)scanlineY,curx2,(float)scanlineY,r,g,b);
+    curx1 += invslope1;
+    curx2 += invslope2;
+  } 
+
+}
+extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b)
+{
+   //sort by y...
+   if(y0 < y1)
+   {
+      float xt = x0, yt = y0;
+      x0 = x1;
+      y0 = y1;
+      x1=xt;
+      y1=yt;
+   }
+
+   if(y1 < y2)
+   {
+      float xt = x1, yt = y1;
+      x1 = x2;
+      y1 = y2;
+      x2 = xt
+      y2 = yt;
+   }
+
+   if(y0 < y2)
+   {
+      float xt = x0, yt = y0;
+      x0 = x2;
+      y0 = y2;
+      x2=xt;
+      y2=yt;
+   }
+
+
+}
+
+extern "C" void StrokeTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b)
+{
+
+}
+
 //MEMORY
 internal void InitializeMemoryArena(MemoryArena *arena, void *start, size_t size)
 {
