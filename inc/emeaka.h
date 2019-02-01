@@ -3,6 +3,7 @@
 #include <cstdlib>
 
 #include "emeaka_platform.h"
+#include "emeaka_vector.h"
 //helper defines
 
 #define internal static
@@ -31,38 +32,11 @@
 #endif
 
 
-template <typename T>
-struct tV2
-{
-  tV2():tV2(T(),T()){}
-  tV2(T _x, T _y) : X(_x), Y(_y){}
-  T X;
-  T Y;
-};
-
-typedef tV2<float> V2;
-typedef tV2<int64_t> iV2;
-typedef tV2<uint64_t> uV2;
-
-template <typename T>
-struct tV3{
-  tV3(): tV3(T(), T(),T()){}
-  tV3(T _x, T _y, T _z) : X(_x), Y(_y), Z(_z){}
-  T X;
-  T Y;
-  T Z;
-};
-
-typedef tV3<float> V3;
-typedef tV3<int64_t> iV3;
-typedef tV3<uint64_t> uV3;
-
-
 struct Position
 {
    //let's just store these as raw tiles?
-   uV3 Tile;
-   V2 TileOffset;
+   vec3u Tile;
+   vec2f TileOffset;
   
 };
 
