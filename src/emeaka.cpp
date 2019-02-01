@@ -243,7 +243,7 @@ void _FillTopFlatTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, float 
 
   for (int scanlineY = (int)Round(y2); scanlineY > (int)Round(y0); scanlineY--)
   {
-       DrawLine(offscreenBuffer,curx1,(float)scanlineY,curx2,(float)scanlineY,r,g,b);
+   DrawLine(offscreenBuffer,curx1,(float)scanlineY,curx2,(float)scanlineY,r,g,b);
 
     curx1 -= invslope1;
     curx2 -= invslope2;
@@ -282,7 +282,7 @@ extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, flo
       float xt = x1, yt = y1;
       x1 = x2;
       y1 = y2;
-      x2 = xt
+      x2 = xt;
       y2 = yt;
    }
 
