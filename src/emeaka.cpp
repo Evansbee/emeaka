@@ -36,35 +36,6 @@ extern "C" void DrawPixel(GameOffscreenBuffer *offscreenBuffer, float x, float y
 
 
 
-extern "C" void DrawRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
-{
-   int _x0 = (int)Round(x0);
-   int _y0 = (int)Round(y0);
-   int _x1 = (int)Round(x1);
-   int _y1 = (int)Round(y1);
-
-   if(_x1 < _x0)
-   {
-      int swap = _x0;
-      _x0 = _x1;
-      _x1 = swap;
-   }   
-
-   if(_y1 < _y0)
-   {
-      int swap = _y0;
-      _y0 = _y1;
-      _y1 = swap;
-   }
-
-   for (int y = _y0; y < _y1; ++y)
-   {
-      for (int x = _x0; x < _x1; ++x)
-      {
-         DrawPixel(offscreenBuffer, (float)x, float(y), r, g, b);
-      }
-   }
-}
 
 extern "C" void StrokeRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float fillr, float fillg, float fillb, float stroker, float strokeg, float strokeb)
 {
@@ -317,13 +288,50 @@ if (y1==y2)
   }
 
 }
-
 extern "C" void StrokeTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b)
 {
    DrawLine(offscreenBuffer,x0,y0,x1,y1,r,g,b);
    DrawLine(offscreenBuffer,x1,y1,x2,y2,r,g,b);
    DrawLine(offscreenBuffer,x2,y2,x0,y0,r,g,b);
 }
+extern "C" void DrawRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
+{
+   int _x0 = (int)Round(x0);
+   int _y0 = (int)Round(y0);
+   int _x1 = (int)Round(x1);
+   int _y1 = (int)Round(y1);
+
+   DrawTriangle(offscreenBuffer,x0,y0,x1,y1,x0,y1,r,g,b);
+   //StrokeTriangle(offscreenBuffer,x0,y0,x1,y1,x0,y1,1.f-r,1.f-g,1.f-b);
+   DrawTriangle(offscreenBuffer,x0,y0,x1,y1,x1,y0,r,g,b);
+   //StrokeTriangle(offscreenBuffer,x0,y0,x1,y1,x1,y0,1.f-r,1.f-g,1.f-b);
+
+   return;
+   if(_x1 < _x0)
+   {
+      int swap = _x0;
+      _x0 = _x1;
+      _x1 = swap;
+   }   
+
+   if(_y1 < _y0)
+   {
+      int swap = _y0;
+      _y0 = _y1;
+      _y1 = swap;
+   }
+
+   for (int y = _y0; y < _y1; ++y)
+   {
+      for (int x = _x0; x < _x1; ++x)
+      {
+         DrawPixel(offscreenBuffer, (float)x, float(y), r, g, b);
+      }
+   }
+}
+
+
+
 
 //MEMORY
 internal void InitializeMemoryArena(MemoryArena *arena, void *start, size_t size)
