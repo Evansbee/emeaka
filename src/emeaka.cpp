@@ -268,7 +268,7 @@ void _FillBottomFlatTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, flo
 extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b)
 {
    //sort by y...
-   if(y0 < y1)
+   if(y0 > y1)
    {
       float xt = x0, yt = y0;
       x0 = x1;
@@ -277,7 +277,7 @@ extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, flo
       y1=yt;
    }
 
-   if(y1 < y2)
+   if(y1 > y2)
    {
       float xt = x1, yt = y1;
       x1 = x2;
@@ -286,7 +286,7 @@ extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, flo
       y2 = yt;
    }
 
-   if(y0 < y2)
+   if(y0 > y2)
    {
       float xt = x0, yt = y0;
       x0 = x2;
@@ -294,13 +294,35 @@ extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, flo
       x2=xt;
       y2=yt;
    }
+if (y1==y2)
+  {
+    _FillBottomFlatTriangle(offscreenBuffer, x0, y0, x1,y1,x2,y2,r,g,b);
+  }
+  /* check for trivial case of top-flat triangle */
+  else if (y0==y1)
+  {
+    _FillTopFlatTriangle(offscreenBuffer, x0, y0, x1,y1,x2,y2,r,g,b);
+  } 
+  else
+  {
+    /* general case - split the triangle in a topflat and bottom-flat one */ 
+   float x3,y3;
 
+   y3 = y2;
+   x3 = x0 + (((y1-y0)/(y2-y0))) * (x2-x0);
+
+
+    _FillBottomFlatTriangle(offscreenBuffer, x0, y0, x1,y1,x3,y3,r,g,b);
+    _FillTopFlatTriangle(offscreenBuffer, x1, y1, x3,y3,x2,y2,r,g,b);
+  }
 
 }
 
 extern "C" void StrokeTriangle(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b)
 {
-
+   DrawLine(offscreenBuffer,x0,y0,x1,y1,r,g,b);
+   DrawLine(offscreenBuffer,x1,y1,x2,y2,r,g,b);
+   DrawLine(offscreenBuffer,x2,y2,x0,y0,r,g,b);
 }
 
 //MEMORY
@@ -564,6 +586,9 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    
    DrawText(offscreenBuffer,16,16,movementString,0.f,1.f,0.f,true);
    DrawText(offscreenBuffer,16,130,memoryString,0.f,1.f,0.f,true);
+
+   DrawTriangle(offscreenBuffer,30,30,100,100,100,30,1.f,0,0);
+   StrokeTriangle(offscreenBuffer,30,30,100,100,100,30,1.f,1.f,0);
    return;
 
 }
