@@ -18,6 +18,11 @@ extern "C" void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float
    }
 }
 
+void DrawPixel2D(GameOffscreenBuffer *offscreenBuffer, vec2u p, float r, float g, float b, float a = 1.0f);
+{
+
+}
+
 extern "C" void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2f p, float r, float g, float b)
 {
    int32_t _x = (int32_t)Round(p.x);
