@@ -59,12 +59,7 @@ internal void OSXSetupDynamicGameStruct(OSXDynamicGame *game)
     game->DynamicLibrary = 0;
     game->APIFunctions.UpdateAndRender = (GameUpdateAndRenderType *)0;
     game->APIFunctions.GetSoundSamples = (GameGetSoundSamplesType *)0;
-    game->APIFunctions.ClearBitmap = (GameClearBitmapType *)0;
-    game->APIFunctions.DrawPixel = (GameDrawPixelType *)0;
-    game->APIFunctions.DrawRect = (GameDrawRectType *)0;
-    game->APIFunctions.DrawCircle = (GameDrawCircleType *)0;
     game->APIFunctions.DrawLine = (GameDrawLineType *)0;
-    game->APIFunctions.DrawChar = (GameDrawCharType *)0;
     game->APIFunctions.DrawText = (GameDrawTextType *)0;
     game->IsValid = false;
 }
@@ -105,22 +100,12 @@ internal void OSXLoadGame(OSXDynamicGame *game)
 
         game->APIFunctions.UpdateAndRender = (GameUpdateAndRenderType *)dlsym(gameDylib, "GameUpdateAndRender");
         game->APIFunctions.GetSoundSamples = (GameGetSoundSamplesType *)dlsym(gameDylib, "GameGetSoundSamples");
-        game->APIFunctions.ClearBitmap = (GameClearBitmapType *)dlsym(gameDylib, "ClearBitmap");
-        game->APIFunctions.DrawPixel = (GameDrawPixelType *)dlsym(gameDylib, "DrawPixel");
-        game->APIFunctions.DrawRect = (GameDrawRectType *)dlsym(gameDylib, "DrawRect");
-        game->APIFunctions.DrawCircle = (GameDrawCircleType *)dlsym(gameDylib, "DrawCircle");
         game->APIFunctions.DrawLine = (GameDrawLineType *)dlsym(gameDylib, "DrawLine");
-        game->APIFunctions.DrawChar = (GameDrawCharType *)dlsym(gameDylib, "DrawChar");
         game->APIFunctions.DrawText = (GameDrawTextType *)dlsym(gameDylib, "DrawText");
 
         if (game->APIFunctions.UpdateAndRender &&
             game->APIFunctions.GetSoundSamples &&
-            game->APIFunctions.ClearBitmap &&
-            game->APIFunctions.DrawPixel &&
-            game->APIFunctions.DrawRect &&
-            game->APIFunctions.DrawCircle &&
             game->APIFunctions.DrawLine &&
-            game->APIFunctions.DrawChar &&
             game->APIFunctions.DrawText)
         {
             game->IsValid = true;
@@ -688,7 +673,7 @@ int main(int argc, char **argv)
                 float megaCycles = (float)lastElapsedCycles / (float)1000000.f;
                 char fpsString[128];
                 snprintf(fpsString, 128, "FPS: %0.1f UpdateTime: %0.2fms LastCycles: %0.2f MCycles", lastFPS, 1000.f * lastElapsedTime, megaCycles);
-                dynamicGame.APIFunctions.DrawText((GameOffscreenBuffer *)&offscreenBuffer, 16, 100, fpsString, 1.f, 1.f, 1.f, true);
+                dynamicGame.APIFunctions.DrawText((GameOffscreenBuffer *)&offscreenBuffer, vec2i(16, 100), fpsString, 1.f, 1.f, 1.f, true);
 
                 float preAudioFrameTime = OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter());
                 SDL_LockAudioDevice(audioBuffer.AudioDevice);

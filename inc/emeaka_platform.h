@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-
+#include "emeaka_vector.h"
 //types
 enum KeyCode : size_t 
 {
@@ -176,10 +176,10 @@ typedef GAME_UPDATE_AND_RENDER(GameUpdateAndRenderType);
 typedef GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesType);
 
 
-#define GAME_DRAW_LINE(name) void name(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
+#define GAME_DRAW_LINE(name) void name(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
 typedef GAME_DRAW_LINE(GameDrawLineType);
 
-#define GAME_DRAW_TEXT(name) void name(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, char* text, float r, float g, float b, bool shadow)
+#define GAME_DRAW_TEXT(name) void name(GameOffscreenBuffer *offscreenBuffer, vec2i p, char* text, float r, float g, float b, bool shadow)
 typedef GAME_DRAW_TEXT(GameDrawTextType);
 
 

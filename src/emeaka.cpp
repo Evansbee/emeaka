@@ -30,130 +30,15 @@ void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2i p, float r, float g, 
    }
 }
 
-
-void DrawCircle(GameOffscreenBuffer *offscreenBuffer, float cx, float cy, float radius, float r, float g, float b)
+extern "C" void DrawLine(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
 {
-   float x = radius - 1.f;
-   float y = 0;
-   float dx = 1;
-   float dy = 1;
 
-   float err = dx - radius * 2.f;
-
-   while (x >= y)
-   {
-      DrawPixel(offscreenBuffer, vec2i(cx + x, cy + y), r, g, b);
-      DrawPixel(offscreenBuffer, vec2i(cx + y, cy + x), r, g, b);
-      DrawPixel(offscreenBuffer, vec2i(cx - y, cy + x), r, g, b);
-      DrawPixel(offscreenBuffer, vec2i(cx - x, cy + y), r, g, b);
-      DrawPixel(offscreenBuffer, vec2i(cx - x, cy - y), r, g, b);
-      DrawPixel(offscreenBuffer, vec2i(cx - y, cy - x), r, g, b);
-      DrawPixel(offscreenBuffer, vec2i(cx + y, cy - x), r, g, b);
-      DrawPixel(offscreenBuffer, vec2i(cx + x, cy - y), r, g, b);
-
-      if (err <= 0.f)
-      {
-         y += 1.f;
-         err += dy;
-         dy += 2.f;
-      }
-      if (err > 0.f)
-      {
-         x -= 1.f;
-         dx += 2.f;
-         err += dx - radius * 2;
-      }
-   }
 }
 
-void _DrawLineHigh(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
-{
-   float dx = x1 - x0;
-   float dy = y1 - y0;
-   float xi = 1.f;
-   if (dx < 0.f)
-   {
-      xi = -1.f;
-      dx = -dx;
-   }
-
-   float D = 2.f * dx - dy;
-   float x = x0;
-
-   for (float y = y0; y <= y1; y += 1.0f)
-   {
-      DrawPixel(offscreenBuffer, vec2f(x, y) , r, g, b);
-
-      if (D > 0)
-      {
-         x = x + xi;
-         D = D - 2 * dy;
-      }
-
-      D = D + 2 * dx;
-   }
-}
-
-void _DrawLineLow(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
-{
-   float dx = x1 - x0;
-   float dy = y1 - y0;
-   float yi = 1.f;
-   if (dy < 0.f)
-   {
-      yi = -1.f;
-      dy = -dy;
-   }
-
-   float D = 2.f * dy - dx;
-   float y = y0;
-
-   for (float x = x0; x <= x1; x += 1.f)
-   {
-      DrawPixel(offscreenBuffer, vec2f(x, y), r, g, b);
-      if (D > 0.f)
-      {
-         y = y + yi;
-         D = D - 2.f * dx;
-      }
-
-      D = D + 2.f * dy;
-   }
-}
-extern "C" void DrawBitmap(GameOffscreenBuffer *offscreenBuffer, vec2f position, size_t height, size_t width, void* memory)
-{
-   
-}
-extern "C" void DrawLine(GameOffscreenBuffer *offscreenBuffer, vec2f p0, vec2f p1, float r, float g, float b)
-{
-   if (Abs(p1.y - p0.y) < Abs(p1.x - p0.x))
-   {
-      if (p0.x > p1.x)
-      {
-         _DrawLineLow(offscreenBuffer, p1.x, p1.y, p0.x, p0.y, r, g, b);
-      }
-      else
-      {
-         _DrawLineLow(offscreenBuffer, p0.x, p0.y, p1.x, p1.y, r, g, b);
-      }
-   }
-   else
-   {
-      if (p0.y > p1.y)
-      {
-         _DrawLineHigh(offscreenBuffer, p1.x, p1.y, p0.x, p0.y, r, g, b);
-      }
-      else
-      {
-         _DrawLineHigh(offscreenBuffer, p0.x, p0.y, p1.x, p1.y, r, g, b);
-      }
-   }
-}
-
-extern "C" void DrawChar(GameOffscreenBuffer *offscreenBuffer, float x, float y, char c, float r, float g, float b, bool shadow)
+extern "C" void DrawChar(GameOffscreenBuffer *offscreenBuffer, vec2i p, char c, float r, float g, float b, bool shadow)
 {
    //wipe it
-   if (x < -(float)FixedFontWidth || x > (float)offscreenBuffer->Width || y < -(float)FixedFontHeight || y > (float)offscreenBuffer->Height)
+   if (p.x < -(int64_t)FixedFontWidth || p.x > offscreenBuffer->Width || p.y < -(int64_t)FixedFontHeight || p.y > offscreenBuffer->Height)
    {
       return;
    }
@@ -164,140 +49,63 @@ extern "C" void DrawChar(GameOffscreenBuffer *offscreenBuffer, float x, float y,
       {
          if ((FixedFont[c][plot_y] & (1 << (8 - plot_x))) > 0)
          {
-            DrawPixel(offscreenBuffer, vec2f(x + float(plot_x), y + float(plot_y)), r, g, b);
+            DrawPixel(offscreenBuffer, vec2i(p.x + plot_x, p.y + plot_y), r, g, b);
             if (shadow)
             {
-               DrawPixel(offscreenBuffer, vec2f(x + float(plot_x) + 1.f, y + float(plot_y) + 1.f), 0.f, 0.f, 0.f);
+               DrawPixel(offscreenBuffer, vec2i(p.x + plot_x + 1, p.y + plot_y + 1), 0.f, 0.f, 0.f);
             }
          }
       }
    }
 }
 
-extern "C" void DrawText(GameOffscreenBuffer *offscreenBuffer, float x, float y, char *text, float r, float g, float b, bool shadow)
+extern "C" void DrawText(GameOffscreenBuffer *offscreenBuffer, vec2i p, char *text, float r, float g, float b, bool shadow)
 {
-   float current_x = x;
-   float current_y = y;
+   vec2i current = p;
    for (char *c = text; *c != '\0'; ++c)
    {
       if (*c == '\n')
       {
-         current_y += float(FixedFontYAdvance);
-         current_x = x;
+         current.y += FixedFontYAdvance;
+         current.x = p.x;
       }
       else
       {
-         DrawChar(offscreenBuffer, current_x, current_y, *c, r, g, b, shadow);
-         current_x += FixedFontXAdvance;
+         DrawChar(offscreenBuffer, current, *c, r, g, b, shadow);
+         current.x += FixedFontXAdvance;
       }
    }
 }
 
-void _FillTopFlatTriangle(GameOffscreenBuffer *offscreenBuffer, vec2f p0, vec2f p1, vec2f p2, float r, float g, float b)
+extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b)
 {
-   float invslope1 = (p2.x - p0.x) / (p2.y - p0.y);
-  float invslope2 = (p2.x - p1.x) / (p2.y - p1.y);
 
-  float curx1 = p2.x;
-  float curx2 = p2.x;
-
-  for (int scanlineY = (int)Round(p2.y); scanlineY > (int)Round(p0.y); scanlineY--)
-  {
-   DrawLine(offscreenBuffer,vec2f(curx1,(float)scanlineY),vec2f(curx2,(float)scanlineY),r,g,b);
-
-    curx1 -= invslope1;
-    curx2 -= invslope2;
-  }
-}
-void _FillBottomFlatTriangle(GameOffscreenBuffer *offscreenBuffer,  vec2f p0, vec2f p1, vec2f p2,float r, float g, float b)
-{
-  float invslope1 = (p1.x - p0.x) / (p1.y - p0.y);
-  float invslope2 = (p2.x - p0.x) / (p2.y - p0.y);
-
-  float curx1 = p0.x;
-  float curx2 = p0.x;
-
-  for (int scanlineY = (int)Round(p0.y); scanlineY <= (int)Round(p1.y); scanlineY++)
-  {
-   DrawLine(offscreenBuffer,vec2f(curx1,(float)scanlineY),vec2f(curx2,(float)scanlineY),r,g,b);
-    curx1 += invslope1;
-    curx2 += invslope2;
-  } 
 
 }
-extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2f p0, vec2f p1, vec2f p2, float r, float g, float b)
-{
-   //sort by y...
-   if(p0.y > p1.y)
-   {
-      vec2f pt = p0;
-      p0 = p1;
-      p1 = pt;
-   }
-
-   if(p1.y > p2.y)
-   {
-      vec2f pt = p1;
-      p1 = p2;
-      p2 = pt;
-   }
-
-   if(p0.y > p2.y)
-   {
-      vec2f pt = p0;
-      p0 = p2;
-      p2 = pt;
-   }
-if (p1.y == p2.y)
-  {
-    _FillBottomFlatTriangle(offscreenBuffer, p0, p1,p2,r,g,b);
-  }
-  /* check for trivial case of top-flat triangle */
-  else if (p0.y==p1.y)
-  {
-    _FillTopFlatTriangle(offscreenBuffer, p0,p1,p2,r,g,b);
-  } 
-  else
-  {
-    /* general case - split the triangle in a topflat and bottom-flat one */ 
-   vec2f p3 = p2;
-   p3.x = p0.x + (((p1.y-p0.y)/(p2.y-p0.y))) * (p2.x-p0.x);
-
-
-    _FillBottomFlatTriangle(offscreenBuffer, p0, p1,p3,r,g,b);
-    _FillTopFlatTriangle(offscreenBuffer,p1, p3,p2,r,g,b);
-  }
-  DrawLine(offscreenBuffer, p0,p1,r,g,b);
-  DrawLine(offscreenBuffer, p1,p2,r,g,b);
-  DrawLine(offscreenBuffer, p2,p0,r,g,b);
-
-}
-extern "C" void StrokeTriangle(GameOffscreenBuffer *offscreenBuffer, vec2f p0, vec2f p1, vec2f p2, float r, float g, float b)
+extern "C" void StrokeTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b)
 {
    DrawLine(offscreenBuffer,p0,p1,r,g,b);
    DrawLine(offscreenBuffer,p1,p2,r,g,b);
    DrawLine(offscreenBuffer,p2,p0,r,g,b);
 }
-extern "C" void DrawRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
+extern "C" void DrawRect(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
 {
-   int _x0 = (int)Round(x0);
-   int _y0 = (int)Round(y0);
-   int _x1 = (int)Round(x1);
-   int _y1 = (int)Round(y1);
+   vec2i p_ur(p1.x, p0.y);
+   vec2i p_ll(p0.x, p1.y);
 
-   DrawTriangle(offscreenBuffer,vec2f(x0,y0),vec2f(x1,y1),vec2f(x0,y1),r,g,b);
-   //StrokeTriangle(offscreenBuffer,x0,y0,x1,y1,x0,y1,1.f-r,1.f-g,1.f-b);
-   DrawTriangle(offscreenBuffer,vec2f(x0,y0),vec2f(x1,y1),vec2f(x1,y0),r,g,b);
-   //StrokeTriangle(offscreenBuffer,x0,y0,x1,y1,x1,y0,1.f-r,1.f-g,1.f-b);
+   DrawTriangle(offscreenBuffer,p0,p_ur,p1,r,g,b);
+   DrawTriangle(offscreenBuffer,p1,p_ll,p0,r,g,b);
 
    return;
 }
-extern "C" void StrokeRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
+extern "C" void StrokeRect(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
 {
-   DrawLine(offscreenBuffer,vec2f(x0,y0), vec2f(x1,y0),r,g,b);
-   DrawLine(offscreenBuffer,vec2f(x1,y0), vec2f(x1,y1),r,g,b);
-   DrawLine(offscreenBuffer,vec2f(x1,y1), vec2f(x0,y1),r,g,b);
-   DrawLine(offscreenBuffer,vec2f(x0,y1), vec2f(x0,y0),r,g,b);
+   vec2i p_ur(p1.x, p0.y);
+   vec2i p_ll(p0.x, p1.y);
+   DrawLine(offscreenBuffer,p0,p_ur,r,g,b);
+   DrawLine(offscreenBuffer,p_ur,p1,r,g,b);
+   DrawLine(offscreenBuffer,p1,p_ll,r,g,b);
+   DrawLine(offscreenBuffer,p_ll,p0,r,g,b);
 }
 
 
@@ -414,7 +222,7 @@ void InitializeWorld(GameState *gameState)
 
 void DrawCharacter(GameOffscreenBuffer *offscreenBuffer, float x, float y, float width, float height, float r, float g, float b, float a)
 {
-   DrawRect(offscreenBuffer,x-width/2.f, y-height, x+width/2.f, y,r,g,b);
+   DrawRect(offscreenBuffer,vec2i(x-width/2.f, y-height), vec2i(x+width/2.f, y),r,g,b);
 
 }
 
@@ -442,161 +250,14 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    gameState->ToneHz = 500.f + (-250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
 
    ClearBitmap(offscreenBuffer, 0.1f, 0.2f, 0.1f);
-   DrawPixel2D(offscreenBuffer, vec2i(10,10),1.f,1.f,1.f);
+   DrawPixel(offscreenBuffer, vec2i(10,10),1.f,1.f,1.f);
    return;
-   float dx = 0;
-   float dy = 0;
-   if(inputBuffer->KeyboardInput.Key[KeyCode::A].IsDown || inputBuffer->KeyboardInput.Key[KeyCode::S].IsDown || inputBuffer->KeyboardInput.Key[KeyCode::D].IsDown || inputBuffer->KeyboardInput.Key[KeyCode::W].IsDown)
-   {
-      dx = 5.f * gameClocks->UpdateDT * ((float)inputBuffer->KeyboardInput.Key[KeyCode::D].IsDown - (float)inputBuffer->KeyboardInput.Key[KeyCode::A].IsDown);
-      dy = 5.f * gameClocks->UpdateDT * ((float)inputBuffer->KeyboardInput.Key[KeyCode::W].IsDown - (float)inputBuffer->KeyboardInput.Key[KeyCode::S].IsDown);
-   }
-   else
-   {
-      dx = 5.f * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageX;
-      dy = -5.f * gameClocks->UpdateDT * inputBuffer->ControllerInput[0].LeftStick.AverageY;
-   }
 
-   Position storedPosition = gameState->PlayerPos;
-   
-   if(OffsetAndNormalizePosition(gameState->World, &gameState->PlayerPos,vec2f(dx,dy)) && GetTileValueForPosition(gameState,gameState->World,vec2u(gameState->PlayerPos.Tile.x,gameState->PlayerPos.Tile.y)) == 0)
-   {
-      gameState->PlayerPos = storedPosition;
-   }
-   
-   char movementString[1024];
-   snprintf(movementString, 1024, "TileX: %llu\nTileY: %llu\nOffsetX: %0.2f\nOffsetY: %0.2f",gameState->PlayerPos.Tile.x, gameState->PlayerPos.Tile.x, gameState->PlayerPos.TileOffset.x, gameState->PlayerPos.TileOffset.y);
-   char memoryString[1024];
-   float UsedMB = (float)gameState->WorldMemoryArena.Used / (1024.f * 1024.f);
-   float SizeMB = (float)gameState->WorldMemoryArena.Size / (1024.f * 1024.f);
-   float Percent = (UsedMB/SizeMB) * 100.f;
-   snprintf(memoryString, 1024, "World Memory Arena Size: %0.1fMB/%0.1fMB (%0.1f%%)", UsedMB, SizeMB,Percent);
-   int32_t cameraViewWidth = 17;
-   int32_t cameraViewHeight = 9;
-   Position cameraPosition = {};
-   cameraPosition.Tile = gameState->PlayerPos.Tile;
-   //cameraPosition.Tile.X -= cameraPosition.Tile.X % cameraViewWidth;
-   //cameraPosition.Tile.X += (cameraViewWidth  >> 1);
-   //cameraPosition.Tile.Y -= cameraPosition.Tile.Y % cameraViewHeight;
-   //cameraPosition.Tile.Y += (cameraViewHeight >> 1);
-   cameraPosition.TileOffset = gameState->PlayerPos.TileOffset;
-
-   if(inputBuffer->ControllerInput[0].AButton.IsDown)
-   {
-      cameraPosition.TileOffset = gameState->PlayerPos.TileOffset;
-   }
-
-   
-
-   float tileSize = gameState->World->TileSideInPixels;
-
-   Position upperLeftTile = cameraPosition, lowerRightTile = cameraPosition;
-
-   
-   float middleX = (float)offscreenBuffer->Width/2.f;
-   float middleY = (float)offscreenBuffer->Height/2.f;
-   float drawStartX = middleX - ((float)gameState->World->TileSideInPixels * (float)cameraViewWidth/2.f);
-   float drawStartY = middleY + ((float)gameState->World->TileSideInPixels * (float)cameraViewHeight/2.f);
-   float drawStopX = middleX + ((float)gameState->World->TileSideInPixels * (float)cameraViewWidth/2.f);
-   float drawStopY = middleY - ((float)gameState->World->TileSideInPixels * (float)cameraViewHeight/2.f);
-
-   
-   //< > and out because of the UINT wrapping we rely on
-
-   size_t maxTilesY = gameState->World->TileMap->ChunksY * gameState->World->TileMap->ChunkSize;
-   size_t maxTilesX = gameState->World->TileMap->ChunksX * gameState->World->TileMap->ChunkSize;
-
-   float cameraStartX = middleX + tileSize * (0.5f - cameraPosition.TileOffset.x );
-   float cameraStartY = middleY - tileSize * (0.5f - cameraPosition.TileOffset.y );
-
-   for(int yOffset = (-cameraViewHeight/2) - 2; yOffset < cameraViewHeight/2 + 1; ++yOffset)
-   {
-      for(int xOffset = (-cameraViewWidth/2) - 2; xOffset < cameraViewWidth/2 + 1; ++xOffset)
-      {
-         float startx = cameraStartX + (float)xOffset * (float)gameState->World->TileSideInPixels;
-         float endx = startx + (float)gameState->World->TileSideInPixels;
-         float starty = cameraStartY - (float)yOffset * (float)gameState->World->TileSideInPixels;
-         float endy = starty - (float)gameState->World->TileSideInPixels;
-
-         if(endx < drawStartX){continue;}
-         if(startx > drawStopX){continue;}
-         if(starty < drawStopY){continue;}
-         if(endy > drawStartY){continue;}
-
-         if(startx < drawStartX){startx = drawStartX;}
-         
-         if(endx > drawStopX){endx = drawStopX;}
-         if(startx < drawStartX){startx = drawStartX;}
-         if(endy < drawStopY){endy = drawStopY;}
-         if(starty > drawStartY){starty = drawStartY;}
- 
-         //not currently 100% sure where that +1 is coming from...
-         size_t xtile = (cameraPosition.Tile.x + xOffset +1)%maxTilesX;
-         size_t ytile = (cameraPosition.Tile.y + yOffset +1)%maxTilesY;
-         
-         
-         uint64_t tileValue = GetTileValueForPosition(gameState, gameState->World, vec2u(xtile,ytile));
-         
-         
-         if(tileValue == 0)
-         {
-            DrawRect(offscreenBuffer,startx, starty, endx, endy,.1f,.1f,.1f);
-         }
-         else if(tileValue == 1)
-         {
-            DrawRect(offscreenBuffer,startx, starty, endx, endy,1,1,1);
-         }
-         else 
-         {
-            DrawRect(offscreenBuffer,startx, starty, endx, endy,1,0,1);
-         }
-
-         if(xtile == gameState->PlayerPos.Tile.x && ytile == gameState->PlayerPos.Tile.y)
-         {
-            StrokeRect(offscreenBuffer,startx+1, starty-1, endx-1, endy+1,1,0,0);
-         }
-      }
-   }
-
-   float whateverX = (float)(gameState->PlayerPos.Tile.x - cameraPosition.Tile.x) * tileSize;
-   float whateverY = (float)(gameState->PlayerPos.Tile.y - cameraPosition.Tile.y) * tileSize;
-   float drawX = (float)offscreenBuffer->Width/2.f + (gameState->PlayerPos.TileOffset.x - cameraPosition.TileOffset.x ) * tileSize + whateverX;
-   float drawY = (float)offscreenBuffer->Height/2.f - (gameState->PlayerPos.TileOffset.y - cameraPosition.TileOffset.y ) * tileSize - whateverY;
-   DrawCharacter(offscreenBuffer, drawX, drawY, tileSize * 0.75f, tileSize * 0.9f, 1.f, 0.6f, 0.f,1.f);
-   
-   DrawText(offscreenBuffer,16,16,movementString,0.f,1.f,0.f,true);
-   DrawText(offscreenBuffer,16,130,memoryString,0.f,1.f,0.f,true);
-
-   DrawTriangle(offscreenBuffer,vec2f(30.f,30.f),vec2f(100.f,100.f),vec2f(100.f,30.f),1.f,0,0);
-   StrokeTriangle(offscreenBuffer,vec2f(30.f,30.f),vec2f(100.f,100.f),vec2f(100.f,30.f),1.f,1.f,0);
-   return;
 
 }
 
-void PlaySinWave(GameState *gameState, GameSoundBuffer *soundBuffer)
-{
-   
-    int16_t ToneVolume = 500;
-    int WavePeriod = soundBuffer->SamplesPerSecond/gameState->ToneHz;
-
-    int16_t *sampleOut = soundBuffer->SampleBuffer;
-    for(int SampleIndex = 0;
-        SampleIndex < soundBuffer->SampleCount;
-        ++SampleIndex)
-    {
-        // TODO(casey): Draw this out for people
-        float SineValue = sinf(gameState->tSin);
-        int16_t SampleValue = (int16_t)(SineValue * ToneVolume);
-        *sampleOut++ = SampleValue;
-        *sampleOut++ = SampleValue;
-
-        gameState->tSin += 2.0f*PI32*1.0f/(float)WavePeriod;
-        gameState->tSin = fmodf(gameState->tSin, 2.0f * PI32);
-    }
-}
 
 extern "C" void GameGetSoundSamples(ThreadContext *threadContext, GameMemory *gameMemory, GameSoundBuffer *soundBuffer)
 {
   GameState *gameState = (GameState *)gameMemory->PermanentStorage;
-  //PlaySinWave(gameState, soundBuffer);
 }
