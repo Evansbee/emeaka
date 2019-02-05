@@ -3,7 +3,7 @@
 #include <cstdio>
 #include "emeaka_font.cpp"
 
-extern "C" void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float g, float b)
+void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float g, float b)
 {
    uint8_t _r = (uint8_t)Round(255.f * r);
    uint8_t _g = (uint8_t)Round(255.f * g);
@@ -18,28 +18,20 @@ extern "C" void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float
    }
 }
 
-void DrawPixel2D(GameOffscreenBuffer *offscreenBuffer, vec2u p, float r, float g, float b, float a = 1.0f);
+void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2i p, float r, float g, float b, float a = 1.0f)
 {
-
-}
-
-extern "C" void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2f p, float r, float g, float b)
-{
-   int32_t _x = (int32_t)Round(p.x);
-   int32_t _y = (int32_t)Round(p.y);
    uint8_t _r = (uint8_t)Round(255.f * r);
    uint8_t _g = (uint8_t)Round(255.f * g);
    uint8_t _b = (uint8_t)Round(255.f * b);
    uint32_t color = RGB_TO_UINT32(_r, _g, _b);
-   if (_x >= 0 && _x < offscreenBuffer->Width && _y >= 0 && _y < offscreenBuffer->Height)
+   if (p.x >= 0 && p.x < offscreenBuffer->Width && p.y >= 0 && p.y < offscreenBuffer->Height)
    {
-      ((uint32_t *)(offscreenBuffer->Memory))[(_y * offscreenBuffer->Width) + _x] = color;
+      ((uint32_t *)(offscreenBuffer->Memory))[(p.y * offscreenBuffer->Width) + p.x] = color;
    }
 }
 
 
-
-extern "C" void DrawCircle(GameOffscreenBuffer *offscreenBuffer, float cx, float cy, float radius, float r, float g, float b)
+void DrawCircle(GameOffscreenBuffer *offscreenBuffer, float cx, float cy, float radius, float r, float g, float b)
 {
    float x = radius - 1.f;
    float y = 0;
@@ -50,14 +42,14 @@ extern "C" void DrawCircle(GameOffscreenBuffer *offscreenBuffer, float cx, float
 
    while (x >= y)
    {
-      DrawPixel(offscreenBuffer, vec2f(cx + x, cy + y), r, g, b);
-      DrawPixel(offscreenBuffer, vec2f(cx + y, cy + x), r, g, b);
-      DrawPixel(offscreenBuffer, vec2f(cx - y, cy + x), r, g, b);
-      DrawPixel(offscreenBuffer, vec2f(cx - x, cy + y), r, g, b);
-      DrawPixel(offscreenBuffer, vec2f(cx - x, cy - y), r, g, b);
-      DrawPixel(offscreenBuffer, vec2f(cx - y, cy - x), r, g, b);
-      DrawPixel(offscreenBuffer, vec2f(cx + y, cy - x), r, g, b);
-      DrawPixel(offscreenBuffer, vec2f(cx + x, cy - y), r, g, b);
+      DrawPixel(offscreenBuffer, vec2i(cx + x, cy + y), r, g, b);
+      DrawPixel(offscreenBuffer, vec2i(cx + y, cy + x), r, g, b);
+      DrawPixel(offscreenBuffer, vec2i(cx - y, cy + x), r, g, b);
+      DrawPixel(offscreenBuffer, vec2i(cx - x, cy + y), r, g, b);
+      DrawPixel(offscreenBuffer, vec2i(cx - x, cy - y), r, g, b);
+      DrawPixel(offscreenBuffer, vec2i(cx - y, cy - x), r, g, b);
+      DrawPixel(offscreenBuffer, vec2i(cx + y, cy - x), r, g, b);
+      DrawPixel(offscreenBuffer, vec2i(cx + x, cy - y), r, g, b);
 
       if (err <= 0.f)
       {
@@ -74,7 +66,7 @@ extern "C" void DrawCircle(GameOffscreenBuffer *offscreenBuffer, float cx, float
    }
 }
 
-internal void _DrawLineHigh(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
+void _DrawLineHigh(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
 {
    float dx = x1 - x0;
    float dy = y1 - y0;
@@ -102,7 +94,7 @@ internal void _DrawLineHigh(GameOffscreenBuffer *offscreenBuffer, float x0, floa
    }
 }
 
-internal void _DrawLineLow(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
+void _DrawLineLow(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
 {
    float dx = x1 - x0;
    float dy = y1 - y0;
@@ -299,27 +291,6 @@ extern "C" void DrawRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y
    //StrokeTriangle(offscreenBuffer,x0,y0,x1,y1,x1,y0,1.f-r,1.f-g,1.f-b);
 
    return;
-   if(_x1 < _x0)
-   {
-      int swap = _x0;
-      _x0 = _x1;
-      _x1 = swap;
-   }   
-
-   if(_y1 < _y0)
-   {
-      int swap = _y0;
-      _y0 = _y1;
-      _y1 = swap;
-   }
-
-   for (int y = _y0; y < _y1; ++y)
-   {
-      for (int x = _x0; x < _x1; ++x)
-      {
-         DrawPixel(offscreenBuffer, vec2f((float)x, float(y)), r, g, b);
-      }
-   }
 }
 extern "C" void StrokeRect(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
 {
@@ -471,7 +442,8 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    gameState->ToneHz = 500.f + (-250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
 
    ClearBitmap(offscreenBuffer, 0.1f, 0.2f, 0.1f);
-   
+   DrawPixel2D(offscreenBuffer, vec2i(10,10),1.f,1.f,1.f);
+   return;
    float dx = 0;
    float dy = 0;
    if(inputBuffer->KeyboardInput.Key[KeyCode::A].IsDown || inputBuffer->KeyboardInput.Key[KeyCode::S].IsDown || inputBuffer->KeyboardInput.Key[KeyCode::D].IsDown || inputBuffer->KeyboardInput.Key[KeyCode::W].IsDown)

@@ -176,39 +176,18 @@ typedef GAME_UPDATE_AND_RENDER(GameUpdateAndRenderType);
 typedef GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesType);
 
 
-#define GAME_CLEAR_BITMAP(name) void name(GameOffscreenBuffer *offscreenBuffer, float r, float g, float b)
-typedef GAME_CLEAR_BITMAP(GameClearBitmapType);
-
-#define GAME_DRAW_PIXEL(name) void name(GameOffscreenBuffer *offscreenBuffer, float x, float y, float r, float g, float b)
-typedef GAME_DRAW_PIXEL(GameDrawPixelType);
-
-#define GAME_DRAW_RECT(name) void name(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
-typedef GAME_DRAW_RECT(GameDrawRectType);
-
-#define GAME_DRAW_CIRCLE(name) void name(GameOffscreenBuffer *offscreenBuffer, float cx, float cy, float radius, float r, float g, float b)
-typedef GAME_DRAW_CIRCLE(GameDrawCircleType);
-
 #define GAME_DRAW_LINE(name) void name(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float r, float g, float b)
 typedef GAME_DRAW_LINE(GameDrawLineType);
-
-#define GAME_DRAW_CHAR(name) void name(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, char c, float r, float g, float b, bool shadow)
-typedef GAME_DRAW_CHAR(GameDrawCharType);
 
 #define GAME_DRAW_TEXT(name) void name(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, char* text, float r, float g, float b, bool shadow)
 typedef GAME_DRAW_TEXT(GameDrawTextType);
 
-#define GAME_DRAW_TRIANGLE(name) void name(GameOffscreenBuffer *offscreenBuffer, float x0, float y0, float x1, float y1, float x2, float y2, float r, float g, float b)
-typedef GAME_DRAW_TRIANGLE(GameDrawTriangleType);
+
 
 struct GameAPI {
   GameUpdateAndRenderType *UpdateAndRender;
   GameGetSoundSamplesType *GetSoundSamples;
-  GameClearBitmapType *ClearBitmap;
-  GameDrawPixelType *DrawPixel;
-  GameDrawRectType *DrawRect;
-  GameDrawCircleType *DrawCircle;
   GameDrawLineType *DrawLine;
-  GameDrawCharType *DrawChar;
   GameDrawTextType *DrawText;
-  GameDrawTriangleType *DrawTriangle;
+
 };
