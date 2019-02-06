@@ -87,6 +87,8 @@ struct GameState
   GameWorld *World;
   float ToneHz;
   float tSin;
+  float leftTime;
+  float rightTime;
 };
 
 

@@ -30,9 +30,80 @@ void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2i p, float r, float g, 
    }
 }
 
+internal void DrawLineLow(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
+{
+   int64_t dx = p1.x - p0.x;
+   int64_t dy = p1.y - p0.y;
+   int64_t yi = 1;
+   if(dy<0)
+   {
+      yi = -1;
+      dy = -dy;
+   }
+   int64_t d = 2*dy - dx;
+   int64_t y = p0.y;
+   for(int64_t x = p0.x; x <= p1.x; x += 1)
+   {
+      DrawPixel(offscreenBuffer,vec2i(x,y),r,g,b);
+      if(d > 0)
+      {
+         y += yi;
+         d -= 2*dx;
+      }
+      d += 2*dy;
+   }
+}
+
+internal void DrawLineHigh(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
+{
+   int64_t dx = p1.x - p0.x;
+   int64_t dy = p1.y - p0.y;
+   int64_t xi = 1;
+   if(dx<0)
+   {
+      xi = -1;
+      dx = -dx;
+   }
+   int64_t d = 2*dx - dy;
+   int64_t x = p0.x;
+   for(int64_t y = p0.y; y <= p1.y; y += 1)
+   {
+      DrawPixel(offscreenBuffer,vec2i(x,y),r,g,b);
+      if(d > 0)
+      {
+         x += xi;
+         d -= 2*dy;
+      }
+      d += 2*dx;
+   }
+}
+
 extern "C" void DrawLine(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
 {
-
+   if(abs(p1.y-p0.y) < abs(p1.x-p0.x))
+   {
+      if(p0.x > p1.x)
+      {
+         DrawLineLow(offscreenBuffer,p1,p0,r,g,b);
+      }
+      else
+      {
+         DrawLineLow(offscreenBuffer,p0,p1,r,g,b);
+      }  
+   }
+   else
+   {
+      if(p0.y > p1.y)
+      {
+         DrawLineHigh(offscreenBuffer,p1,p0,r,g,b);
+      }  
+      else
+      {
+         DrawLineHigh(offscreenBuffer,p0,p1,r,g,b);
+      }
+    
+   }
+   
 }
 
 extern "C" void DrawChar(GameOffscreenBuffer *offscreenBuffer, vec2i p, char c, float r, float g, float b, bool shadow)
@@ -76,10 +147,13 @@ extern "C" void DrawText(GameOffscreenBuffer *offscreenBuffer, vec2i p, char *te
       }
    }
 }
-
-extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b)
+void SortByY(vec2i *p0, vec2i *p1, vec2i *p2)
 {
 
+}
+extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b)
+{
+   SortByY(&p0, &p1, &p2);
 
 }
 extern "C" void StrokeTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b)
@@ -241,6 +315,8 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       gameState->PlayerPos.TileOffset.y = 0.0f;
       gameState->ToneHz = 500.f;
       gameState->tSin = 0.f;
+      gameState->leftTime = 0.f;
+      gameState->rightTime = 0.f;
       InitializeMemoryArena(&gameState->WorldMemoryArena, (void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)), gameMemory->PermanentStorageSize - sizeof(GameState));
       InitializeWorld(gameState);
       gameMemory->IsInitialized = true;
@@ -249,8 +325,23 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    }
    gameState->ToneHz = 500.f + (-250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
 
+   int midy = offscreenBuffer->Height / 2;
+   int midx = offscreenBuffer->Width / 2;
+   int offsetx = offscreenBuffer->Width / 8;
+   int height = offscreenBuffer->Height / 4;
+   vec2i left(midx +offsetx+ height*sinf(gameState->leftTime ),midy + height*cosf(gameState->leftTime ));
+   gameState->leftTime  += .00455;
+   gameState->leftTime  = fmodf(gameState->leftTime , 2 * PI32);
+
+   vec2i right(midx -offsetx+ height*sinf(gameState->rightTime ),midy + height*cosf(gameState->rightTime ));
+
+   gameState->rightTime  += .0025;
+   gameState->rightTime  = fmodf(gameState->rightTime , 2 * PI32);
+
    ClearBitmap(offscreenBuffer, 0.1f, 0.2f, 0.1f);
-   DrawPixel(offscreenBuffer, vec2i(10,10),1.f,1.f,1.f);
+
+   DrawLine(offscreenBuffer,right,left,1.f,0,0);
+   DrawLine(offscreenBuffer,right,left,0,1.f,0);
    return;
 
 
