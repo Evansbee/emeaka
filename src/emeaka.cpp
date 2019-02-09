@@ -105,6 +105,23 @@ extern "C" void DrawLine(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p
    }
    
 }
+void StrokeCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, float r, float g, float b)
+{
+   int64_t x = -radius, y = 0, err = 2 - 2 * radius;
+   do
+   {
+      DrawPixel(offscreenBuffer,vec2i(p.x-x,p.y+y),r,g,b);
+      DrawPixel(offscreenBuffer,vec2i(p.x-y,p.y-x),r,g,b);
+      DrawPixel(offscreenBuffer,vec2i(p.x+x,p.y-y),r,g,b);
+      DrawPixel(offscreenBuffer,vec2i(p.x+y,p.y+x),r,g,b);
+      radius = err;
+      if(radius <= y) err += ++y*2+1;
+      if(radius > x || err > 7) err += ++x*2+1;
+      /* code */
+   } while (x<0);
+   
+}
+
 
 extern "C" void DrawChar(GameOffscreenBuffer *offscreenBuffer, vec2i p, char c, float r, float g, float b, bool shadow)
 {
@@ -147,14 +164,41 @@ extern "C" void DrawText(GameOffscreenBuffer *offscreenBuffer, vec2i p, char *te
       }
    }
 }
-void SortByY(vec2i *p0, vec2i *p1, vec2i *p2)
-{
 
-}
 extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b)
 {
-   SortByY(&p0, &p1, &p2);
+   //not sure why i chose a lambda here...
+   auto VecSwap = [](vec2i &e1, vec2i &e2){
+      vec2i temp(e1);
+      e1 = e2;
+      e2 = temp;
+   };
 
+   //sort in ascending y
+   if(p0.y > p1.y) VecSwap(p0,p1);
+   if(p1.y > p2.y) VecSwap(p1,p2);
+   if(p0.y > p1.y) VecSwap(p0,p1);
+
+   StrokeCircle(offscreenBuffer,p0,8,1,0,0);
+   StrokeCircle(offscreenBuffer,p1,8,0,1,0);
+   StrokeCircle(offscreenBuffer,p2,8,0,0,1);
+
+   //if it's flat top or flat bottom already...
+   if(p0.y == p1.y)
+   {
+      //flat bottom because p2.y has to be larger (or it's a line..)
+   }
+   else if(p1.y == p2.y)
+   {
+      //flat top since p0.y has to be lower
+   }
+   else
+   {
+      vec2i p_new=p1;
+      p_new.x = p0.x + (((p1.y-p0.y)*(p2.x - p0.x))/(p2.y-p0.y));
+      DrawLine(offscreenBuffer,p1,p_new,1,1,1);
+      StrokeCircle(offscreenBuffer,p_new,8,1,1,1);
+   }
 }
 extern "C" void StrokeTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b)
 {
@@ -317,6 +361,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       gameState->tSin = 0.f;
       gameState->leftTime = 0.f;
       gameState->rightTime = 0.f;
+      gameState->centerTime = 0.f;
       InitializeMemoryArena(&gameState->WorldMemoryArena, (void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)), gameMemory->PermanentStorageSize - sizeof(GameState));
       InitializeWorld(gameState);
       gameMemory->IsInitialized = true;
@@ -329,19 +374,36 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    int midx = offscreenBuffer->Width / 2;
    int offsetx = offscreenBuffer->Width / 8;
    int height = offscreenBuffer->Height / 4;
-   vec2i left(midx +offsetx+ height*sinf(gameState->leftTime ),midy + height*cosf(gameState->leftTime ));
-   gameState->leftTime  += .00455;
+   
+
+   float leftHz=0.125f;
+   float rightHz=0.25f;
+   float centerHz=0.5f;
+
+   float leftTimeUpdate = gameClocks->UpdateDT * leftHz * 2 * PI32;
+   float rightTimeUpdate = gameClocks->UpdateDT * rightHz * 2 * PI32;
+   float centerTimeUpdate = gameClocks->UpdateDT * centerHz * 2 * PI32;
+   
+   
+   vec2i left(midx  - offsetx+ height*sinf(gameState->leftTime ),midy + height*cosf(gameState->leftTime ));
+   gameState->leftTime  += leftTimeUpdate;
    gameState->leftTime  = fmodf(gameState->leftTime , 2 * PI32);
 
-   vec2i right(midx -offsetx+ height*sinf(gameState->rightTime ),midy + height*cosf(gameState->rightTime ));
+   vec2i right(midx + offsetx+ height*sinf(gameState->rightTime ),midy + height*cosf(gameState->rightTime ));
 
-   gameState->rightTime  += .0025;
+   gameState->rightTime  += rightTimeUpdate;
    gameState->rightTime  = fmodf(gameState->rightTime , 2 * PI32);
 
-   ClearBitmap(offscreenBuffer, 0.1f, 0.2f, 0.1f);
+   
+   vec2i center(midx + height*sinf(gameState->centerTime ),midy + height*cosf(gameState->centerTime ));
 
-   DrawLine(offscreenBuffer,right,left,1.f,0,0);
-   DrawLine(offscreenBuffer,right,left,0,1.f,0);
+   gameState->centerTime  += centerTimeUpdate;
+   gameState->centerTime  = fmodf(gameState->centerTime , 2 * PI32);
+
+
+   ClearBitmap(offscreenBuffer, 0.1f, 0.1f, 0.1f);
+   StrokeTriangle(offscreenBuffer,left,right,center,0,0,1.f);
+   DrawTriangle(offscreenBuffer,left,right,center,0,0,1.f);
    return;
 
 

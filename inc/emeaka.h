@@ -89,6 +89,7 @@ struct GameState
   float tSin;
   float leftTime;
   float rightTime;
+  float centerTime;
 };
 
 
