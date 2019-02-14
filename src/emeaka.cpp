@@ -30,6 +30,31 @@ void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2i p, float r, float g, 
    }
 }
 
+internal void DrawHorizontalLine(GameOffscreenBuffer *osb, vec2i p0, vec2i p1, float r, float g, float b)
+{
+   int64_t x0 = p0.x, x1 = p1.x;
+   if(x1 < x0)
+   {
+      x0 = p1.x;
+      x1 = p0.x;
+   }
+   
+   if(x0 < 0)
+   {
+      x0 = 0;
+   }
+
+   if(x1 >= osb->Width)
+   {
+      x1 = osb->Width-1;
+   }
+
+   for(auto x = x0; x <= x1; ++x)
+   {
+      DrawPixel(osb,vec2i(x,p0.y),r,g,b);
+   }
+}
+
 internal void DrawLineLow(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
 {
    int64_t dx = p1.x - p0.x;
@@ -80,6 +105,14 @@ internal void DrawLineHigh(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i
 
 extern "C" void DrawLine(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
 {
+   bool steep = abs(p1.y - p0.y) > abs(p1.x - p0.x);
+   if(steep)
+   {
+      //swap x & y
+   }
+
+
+
    if(abs(p1.y-p0.y) < abs(p1.x-p0.x))
    {
       if(p0.x > p1.x)
@@ -174,6 +207,8 @@ extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec
       e2 = temp;
    };
 
+
+
    //sort in ascending y
    if(p0.y > p1.y) VecSwap(p0,p1);
    if(p1.y > p2.y) VecSwap(p1,p2);
@@ -186,10 +221,20 @@ extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec
    //if it's flat top or flat bottom already...
    if(p0.y == p1.y)
    {
+      //algorithm -- fill from small x to big x
+      if(p0.x > p1.x) VecSwap(p0,p1);
+      float slope0 = (p2.y-p0.y)/(p2.x-p0.x);
+      float slope1 = (p2.y-p1.y)/(p2.x-p1.x);
+      for(auto y = p0.y; y <= p2.y; ++y)
+      {
+         int64_t startx = 0, endx=50;
+         DrawLine(offscreenBuffer,vec2i(startx,y), vec2i(endx,y),r,g,b);
+      }
       //flat bottom because p2.y has to be larger (or it's a line..)
    }
    else if(p1.y == p2.y)
    {
+      if(p1.x > p2.x) VecSwap(p0,p1);
       //flat top since p0.y has to be lower
    }
    else
@@ -376,9 +421,9 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    int height = offscreenBuffer->Height / 4;
    
 
-   float leftHz=0.125f;
-   float rightHz=0.25f;
-   float centerHz=0.5f;
+   float leftHz=0.125f/10.f;
+   float rightHz=0.25f/10.f;
+   float centerHz=0.5f/10.f;
 
    float leftTimeUpdate = gameClocks->UpdateDT * leftHz * 2 * PI32;
    float rightTimeUpdate = gameClocks->UpdateDT * rightHz * 2 * PI32;
