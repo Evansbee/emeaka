@@ -55,87 +55,71 @@ internal void DrawHorizontalLine(GameOffscreenBuffer *osb, vec2i p0, vec2i p1, f
    }
 }
 
-internal void DrawLineLow(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
-{
-   int64_t dx = p1.x - p0.x;
-   int64_t dy = p1.y - p0.y;
-   int64_t yi = 1;
-   if(dy<0)
-   {
-      yi = -1;
-      dy = -dy;
-   }
-   int64_t d = 2*dy - dx;
-   int64_t y = p0.y;
-   for(int64_t x = p0.x; x <= p1.x; x += 1)
-   {
-      DrawPixel(offscreenBuffer,vec2i(x,y),r,g,b);
-      if(d > 0)
-      {
-         y += yi;
-         d -= 2*dx;
-      }
-      d += 2*dy;
-   }
-}
-
-internal void DrawLineHigh(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
-{
-   int64_t dx = p1.x - p0.x;
-   int64_t dy = p1.y - p0.y;
-   int64_t xi = 1;
-   if(dx<0)
-   {
-      xi = -1;
-      dx = -dx;
-   }
-   int64_t d = 2*dx - dy;
-   int64_t x = p0.x;
-   for(int64_t y = p0.y; y <= p1.y; y += 1)
-   {
-      DrawPixel(offscreenBuffer,vec2i(x,y),r,g,b);
-      if(d > 0)
-      {
-         x += xi;
-         d -= 2*dy;
-      }
-      d += 2*dx;
-   }
-}
-
 extern "C" void DrawLine(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
 {
    bool steep = abs(p1.y - p0.y) > abs(p1.x - p0.x);
+   
+   if(p0.y == p1.y)
+   {
+      DrawHorizontalLine(offscreenBuffer,p0,p1,r,g,b);
+      return;
+   }
    if(steep)
    {
-      //swap x & y
+      int64_t tmp;
+      tmp = p0.x;
+      p0.x = p0.y;
+      p0.y = tmp;
+
+      tmp = p1.x;
+      p1.x = p1.y;
+      p1.y = tmp;
    }
 
-
-
-   if(abs(p1.y-p0.y) < abs(p1.x-p0.x))
+   if(p0.x > p1.x)
    {
-      if(p0.x > p1.x)
-      {
-         DrawLineLow(offscreenBuffer,p1,p0,r,g,b);
-      }
-      else
-      {
-         DrawLineLow(offscreenBuffer,p0,p1,r,g,b);
-      }  
+      vec2i tmp = p0;
+      p0 = p1;
+      p1 = tmp;
+   }
+
+   int64_t dx, dy;
+   dx = p1.x - p0.x;
+   dy = abs(p1.y - p0.y);
+
+   int64_t err = dx / 2;
+   int64_t ystep;
+   if(p0.y < p1.y)
+   {
+      ystep = 1;
    }
    else
    {
-      if(p0.y > p1.y)
+      ystep = -1;
+   }
+
+   vec2i drawPt = p0;
+   for(;drawPt.x <= p1.x; drawPt.x++)
+   {
+      if(steep)
       {
-         DrawLineHigh(offscreenBuffer,p1,p0,r,g,b);
-      }  
+         vec2i inv;
+         inv.x = drawPt.y;
+         inv.y = drawPt.x;
+         DrawPixel(offscreenBuffer,inv,r,g,b);
+      }
       else
       {
-         DrawLineHigh(offscreenBuffer,p0,p1,r,g,b);
+         DrawPixel(offscreenBuffer, drawPt, r,g,b);
       }
-    
+      err -= dy;
+      if(err < 0)
+      {
+         drawPt.y += ystep;
+         err += dx;
+      }
    }
+   return;
    
 }
 void StrokeCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, float r, float g, float b)
@@ -207,6 +191,7 @@ extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec
       e2 = temp;
    };
 
+   int64_t a, _b, y, last;
 
 
    //sort in ascending y
@@ -214,35 +199,63 @@ extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec
    if(p1.y > p2.y) VecSwap(p1,p2);
    if(p0.y > p1.y) VecSwap(p0,p1);
 
-   StrokeCircle(offscreenBuffer,p0,8,1,0,0);
-   StrokeCircle(offscreenBuffer,p1,8,0,1,0);
-   StrokeCircle(offscreenBuffer,p2,8,0,0,1);
+   if(p0.y == p2.y)
+   {
+      a = _b = p0.x;
+      if(p1.x < 1) a = p1.x;
+      else if(p1.x > _b) b = p1.x;
+      if(p2.x < a) a = p2.x;
+      else if(p2.x > _b) _b = p2.x;
+      DrawHorizontalLine(offscreenBuffer,vec2i(a,p0.y),vec2i(_b,p0.y),r,g,b);
+      return;
+   }
 
-   //if it's flat top or flat bottom already...
-   if(p0.y == p1.y)
+   int64_t 
+   dx01 = p1.x - p0.x,
+   dy01 = p1.y - p0.y,
+   dx02 = p2.x - p0.x,
+   dy02 = p2.y - p0.y,
+   dx12 = p2.x - p1.x,
+   dy12 = p2.y - p1.y,
+   sa = 0,
+   sb = 0;
+
+
+   if(p1.y == p2.y) last = p1.y;
+   else last = p1.y-1;
+
+
+   for(y = p0.y; y <= last; ++y)
    {
-      //algorithm -- fill from small x to big x
-      if(p0.x > p1.x) VecSwap(p0,p1);
-      float slope0 = (p2.y-p0.y)/(p2.x-p0.x);
-      float slope1 = (p2.y-p1.y)/(p2.x-p1.x);
-      for(auto y = p0.y; y <= p2.y; ++y)
+      a = p0.x + sa/dy01;
+      _b = p0.x + sb/dy02;
+      sa += dx01;
+      sb += dx02;
+
+      if(a>_b)
       {
-         int64_t startx = 0, endx=50;
-         DrawLine(offscreenBuffer,vec2i(startx,y), vec2i(endx,y),r,g,b);
+          int64_t tmp = a;
+          a = _b; _b = tmp;
       }
-      //flat bottom because p2.y has to be larger (or it's a line..)
+      DrawHorizontalLine(offscreenBuffer,vec2i(a,y),vec2i(_b,y),r,g,b);
+     
    }
-   else if(p1.y == p2.y)
+
+   sa = dx12 * (y - p1.y);
+   sb = dx02 * (y - p0.y);
+
+   for(;y <= p2.y; ++y)
    {
-      if(p1.x > p2.x) VecSwap(p0,p1);
-      //flat top since p0.y has to be lower
-   }
-   else
-   {
-      vec2i p_new=p1;
-      p_new.x = p0.x + (((p1.y-p0.y)*(p2.x - p0.x))/(p2.y-p0.y));
-      DrawLine(offscreenBuffer,p1,p_new,1,1,1);
-      StrokeCircle(offscreenBuffer,p_new,8,1,1,1);
+      a = p1.x + sa/dy12;
+      _b = p0.x + sb/dy02;
+      sa+=dx12;
+      sb+=dx02;
+      if(a>_b)
+      {
+          int64_t tmp = a;
+          a = _b; _b = tmp;
+      }
+      DrawHorizontalLine(offscreenBuffer,vec2i(a,y),vec2i(_b,y),r,g,b);
    }
 }
 extern "C" void StrokeTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b)
@@ -421,9 +434,9 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    int height = offscreenBuffer->Height / 4;
    
 
-   float leftHz=0.125f/10.f;
-   float rightHz=0.25f/10.f;
-   float centerHz=0.5f/10.f;
+   float leftHz=0.125f/2.f;
+   float rightHz=0.25f/2.f;
+   float centerHz=0.5f/2.f;
 
    float leftTimeUpdate = gameClocks->UpdateDT * leftHz * 2 * PI32;
    float rightTimeUpdate = gameClocks->UpdateDT * rightHz * 2 * PI32;
@@ -447,8 +460,8 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
 
 
    ClearBitmap(offscreenBuffer, 0.1f, 0.1f, 0.1f);
-   StrokeTriangle(offscreenBuffer,left,right,center,0,0,1.f);
    DrawTriangle(offscreenBuffer,left,right,center,0,0,1.f);
+   StrokeTriangle(offscreenBuffer,left,right,center,1.f,1.f,1.f);
    return;
 
 
