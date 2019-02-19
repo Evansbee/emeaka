@@ -167,18 +167,26 @@ void DrawCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, float
 {
    size_t draw = 0;
    int64_t x = -radius, y = 0, err = 2 - 2 * radius;
+   bool drawy = true;
    do
    {
-      DrawHorizontalLine(offscreenBuffer, vec2i(p.x-x,p.y+y), vec2i(p.x,p.y+y),r,g,b,a);      
-      DrawHorizontalLine(offscreenBuffer, vec2i(p.x-y,p.y-x), vec2i(p.x,p.y-x),r,g,b,a);
-      DrawHorizontalLine(offscreenBuffer, vec2i(p.x+x,p.y-y), vec2i(p.x,p.y-y),r,g,b,a);
-      DrawHorizontalLine(offscreenBuffer, vec2i(p.x+y,p.y+x), vec2i(p.x,p.y+x),r,g,b,a);
+      if(drawy && y != 0)
+      {
+      DrawHorizontalLine(offscreenBuffer, vec2i(p.x-x,p.y+y), vec2i(p.x+x,p.y+y),r,g,b,a);      
+      //DrawHorizontalLine(offscreenBuffer, vec2i(p.x-y,p.y-x), vec2i(p.x,p.y-x),r,g,b,a);
+      DrawHorizontalLine(offscreenBuffer, vec2i(p.x+x,p.y-y), vec2i(p.x-x,p.y-y),r,g,b,a);
+      //DrawHorizontalLine(offscreenBuffer, vec2i(p.x+y,p.y+x), vec2i(p.x,p.y+x),r,g,b,a);
+      }
       radius = err;
-      if(radius <= y) err += ++y*2+1;
+      drawy = false;
+      if(radius <= y) 
+      {
+         err += ++y*2+1;
+         drawy = true;
+      }
       if(radius > x || err > 7) err += ++x*2+1;
-      /* code */
-   } while (true && x<0);
-   
+   } while (x<0);
+   DrawHorizontalLine(offscreenBuffer, vec2i(p.x-radius/2,p.y), vec2i(p.x+radius/2,p.y),r,g,b,a); 
 }
 
 extern "C" void DrawChar(GameOffscreenBuffer *offscreenBuffer, vec2i p, char c, float r, float g, float b, bool shadow)
@@ -573,19 +581,19 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
 
 
    ClearBitmap(offscreenBuffer, 0.1f, 0.1f, 0.1f);
-   DrawBitmap(offscreenBuffer, vec2i(10,10),&gameState->testBitmap);
+   DrawBitmap(offscreenBuffer, vec2i(350,250),&gameState->testBitmap);
    
-   DrawCircle(offscreenBuffer,vec2i(350,250),150,1,0.2f,0.3f,.5);
-   //StrokeCircle(offscreenBuffer,vec2i(250,250),9,1.0f,1.0f,1.0f);
+   //DrawCircle(offscreenBuffer,vec2i(350,250),150,1,0.2f,0.3f,.5);
+   //StrokeCircle(offscreenBuffer,vec2i(350,250),150,1.0f,1.0f,1.0f);
    
-   //DrawCircle(offscreenBuffer,left,150,1.0f,0,0,.5f);
-   //StrokeCircle(offscreenBuffer,left,150,1.f,1.f,1.f);
+   DrawCircle(offscreenBuffer,left,150,1.0f,0,0,.75f);
+   StrokeCircle(offscreenBuffer,left,150,1.f,1.f,1.f);
    
-   //DrawCircle(offscreenBuffer,center,150,0.0f,1,0,.5f);
-   //StrokeCircle(offscreenBuffer,center,150,1.f,1.f,1.f);
+   DrawCircle(offscreenBuffer,center,150,0.0f,1,0,.75f);
+   StrokeCircle(offscreenBuffer,center,150,1.f,1.f,1.f);
 
-   //DrawCircle(offscreenBuffer,right,150,0.0f,0,1,.5f);
-   //StrokeCircle(offscreenBuffer,right,150,1.f,1.f,1.f);
+   DrawCircle(offscreenBuffer,right,150,0.0f,0,1,.75f);
+   StrokeCircle(offscreenBuffer,right,150,1.f,1.f,1.f);
 
    //DrawTriangle(offscreenBuffer,left,right,center,0,0,1.f);
    //StrokeTriangle(offscreenBuffer,left,right,center,1.f,1.f,1.f);
