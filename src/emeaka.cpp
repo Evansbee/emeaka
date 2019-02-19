@@ -1,7 +1,16 @@
 #include "emeaka.h"
 #include "emeaka_intrinsics.h"
 #include <cstdio>
+
+
 #include "emeaka_font.cpp"
+
+//stb stuff
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_NO_STDIO
+#define STBI_ONLY_BMP
+#include "stb_image.h"
+
 
 void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float g, float b)
 {
@@ -20,17 +29,32 @@ void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float g, float b
 
 void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2i p, float r, float g, float b, float a = 1.0f)
 {
-   uint8_t _r = (uint8_t)Round(255.f * r);
-   uint8_t _g = (uint8_t)Round(255.f * g);
-   uint8_t _b = (uint8_t)Round(255.f * b);
-   uint32_t color = RGB_TO_UINT32(_r, _g, _b);
+   RGBA color;
+   color.r = (uint8_t)Round(255.f * r);
+   color.g = (uint8_t)Round(255.f * g);
+   color.b = (uint8_t)Round(255.f * b);
+   color.a = (uint8_t)Round(255.f * a);
+   
    if (p.x >= 0 && p.x < offscreenBuffer->Width && p.y >= 0 && p.y < offscreenBuffer->Height)
    {
-      ((uint32_t *)(offscreenBuffer->Memory))[(p.y * offscreenBuffer->Width) + p.x] = color;
+      if(a == 1.0f)
+      {
+         ((uint32_t *)(offscreenBuffer->Memory))[(p.y * offscreenBuffer->Width) + p.x] = color.rgba;
+      }
+      else if (a > 0.f && a < 1.f)
+      {
+         RGBA currentColor;
+         currentColor.rgba = ((uint32_t *)(offscreenBuffer->Memory))[(p.y * offscreenBuffer->Width) + p.x];
+
+         color.r = Round(255.f * (r * a + ((float)currentColor.r/255.f) * (1.0f - a)));
+         color.g = Round(255.f * (g * a + ((float)currentColor.g/255.f) * (1.0f - a)));
+         color.b = Round(255.f * (b * a + ((float)currentColor.b/255.f) * (1.0f - a)));
+         ((uint32_t *)(offscreenBuffer->Memory))[(p.y * offscreenBuffer->Width) + p.x] = color.rgba;
+      }
    }
 }
 
-internal void DrawHorizontalLine(GameOffscreenBuffer *osb, vec2i p0, vec2i p1, float r, float g, float b)
+internal void DrawHorizontalLine(GameOffscreenBuffer *osb, vec2i p0, vec2i p1, float r, float g, float b, float a = 1.0f)
 {
    int64_t x0 = p0.x, x1 = p1.x;
    if(x1 < x0)
@@ -51,7 +75,7 @@ internal void DrawHorizontalLine(GameOffscreenBuffer *osb, vec2i p0, vec2i p1, f
 
    for(auto x = x0; x <= x1; ++x)
    {
-      DrawPixel(osb,vec2i(x,p0.y),r,g,b);
+      DrawPixel(osb,vec2i(x,p0.y),r,g,b,a);
    }
 }
 
@@ -139,6 +163,23 @@ void StrokeCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, flo
    
 }
 
+void DrawCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, float r, float g, float b, float a)
+{
+   size_t draw = 0;
+   int64_t x = -radius, y = 0, err = 2 - 2 * radius;
+   do
+   {
+      DrawHorizontalLine(offscreenBuffer, vec2i(p.x-x,p.y+y), vec2i(p.x,p.y+y),r,g,b,a);      
+      DrawHorizontalLine(offscreenBuffer, vec2i(p.x-y,p.y-x), vec2i(p.x,p.y-x),r,g,b,a);
+      DrawHorizontalLine(offscreenBuffer, vec2i(p.x+x,p.y-y), vec2i(p.x,p.y-y),r,g,b,a);
+      DrawHorizontalLine(offscreenBuffer, vec2i(p.x+y,p.y+x), vec2i(p.x,p.y+x),r,g,b,a);
+      radius = err;
+      if(radius <= y) err += ++y*2+1;
+      if(radius > x || err > 7) err += ++x*2+1;
+      /* code */
+   } while (true && x<0);
+   
+}
 
 extern "C" void DrawChar(GameOffscreenBuffer *offscreenBuffer, vec2i p, char c, float r, float g, float b, bool shadow)
 {
@@ -286,6 +327,43 @@ extern "C" void StrokeRect(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i
 
 
 
+internal void InitialzeMemoryBank(MemoryBank *bank, void *start, size_t size)
+{
+   bank->Start = start;
+   bank->Size=size;
+   bank->Entries = 1;
+   bank->Used = 0;
+   bank->NextFree = (MemoryAllocationHeader *)start;
+
+   MemoryAllocationHeader *header = (MemoryAllocationHeader *)start;
+   header->InUse = false;
+   header->Next = nullptr;
+   header->Previous = nullptr;
+   header->Size = size - sizeof(MemoryAllocationHeader);
+}
+
+void *AllocateMemory(MemoryBank *bank, size_t size)
+{
+   MemoryAllocationHeader *current = (MemoryAllocationHeader *)bank->Start;
+
+   while(current->InUse || current->Size < size)
+   {
+      if(current->Next != nullptr)
+      {
+         current = current->Next;
+      }
+      else
+      {
+         return nullptr;
+      }
+   }
+
+   void *returnValue = (void *)((size_t)current + sizeof(MemoryAllocationHeader));
+   
+   //add new header afterwards...
+   return returnValue;
+}
+
 //MEMORY
 internal void InitializeMemoryArena(MemoryArena *arena, void *start, size_t size)
 {
@@ -401,6 +479,30 @@ void DrawCharacter(GameOffscreenBuffer *offscreenBuffer, float x, float y, float
    DrawRect(offscreenBuffer,vec2i(x-width/2.f, y-height), vec2i(x+width/2.f, y),r,g,b);
 
 }
+void DrawBitmap(GameOffscreenBuffer *offscreenBuffer, vec2i p, BitmapData* bitmap)
+{
+   for(int64_t y = 0; y < bitmap->height; ++y)
+   {
+      for(int64_t x = 0; x < bitmap->width; ++x)
+      {
+         uint32_t rgba = ((uint32_t *)bitmap->data)[(y * bitmap->width) + x];
+         uint8_t 
+         a = ((rgba >> 24) & 0xFF),
+         b = ((rgba >> 16) & 0xFF),
+         g = ((rgba >> 8) & 0xFF),
+         r = ((rgba >> 0) & 0xFF);
+
+
+         float 
+         fa = (float)a/255.f,
+         fr = (float)r/255.f,
+         fg = (float)g/255.f,
+         fb = (float)b/255.f;
+
+         DrawPixel(offscreenBuffer, vec2i(x + p.x, y + p.y),fr,fg,fb,fa);        
+      }
+   }
+}
 
 extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
 {
@@ -425,6 +527,17 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       gameMemory->IsInitialized = true;
       printf("World Memory Location: 0x%p\n",gameState->World);
       printf("World->TileMap Location: 0x%p\n",gameState->World->TileMap);
+      char stringToRead[] = "bmptest.bmp";
+      DebugFileResult bitmapFile = gameMemory->PlatformFunctions.PlatformReadEntireFile(threadContext, stringToRead);
+      
+      printf("Read Filesize: %zu\n",bitmapFile.FileSize);
+
+      if(bitmapFile.FileSize > 0)
+      {
+         int comp = 4;
+         gameState->testBitmap.data = stbi_load_from_memory((const unsigned char *)bitmapFile.Contents, bitmapFile.FileSize,&gameState->testBitmap.width,&gameState->testBitmap.height,&comp,4);
+         printf("Bitmap Data: %d %d %d\n",gameState->testBitmap.height, gameState->testBitmap.width, comp);
+      }
    }
    gameState->ToneHz = 500.f + (-250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
 
@@ -460,8 +573,22 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
 
 
    ClearBitmap(offscreenBuffer, 0.1f, 0.1f, 0.1f);
-   DrawTriangle(offscreenBuffer,left,right,center,0,0,1.f);
-   StrokeTriangle(offscreenBuffer,left,right,center,1.f,1.f,1.f);
+   DrawBitmap(offscreenBuffer, vec2i(10,10),&gameState->testBitmap);
+   
+   DrawCircle(offscreenBuffer,vec2i(350,250),150,1,0.2f,0.3f,.5);
+   //StrokeCircle(offscreenBuffer,vec2i(250,250),9,1.0f,1.0f,1.0f);
+   
+   //DrawCircle(offscreenBuffer,left,150,1.0f,0,0,.5f);
+   //StrokeCircle(offscreenBuffer,left,150,1.f,1.f,1.f);
+   
+   //DrawCircle(offscreenBuffer,center,150,0.0f,1,0,.5f);
+   //StrokeCircle(offscreenBuffer,center,150,1.f,1.f,1.f);
+
+   //DrawCircle(offscreenBuffer,right,150,0.0f,0,1,.5f);
+   //StrokeCircle(offscreenBuffer,right,150,1.f,1.f,1.f);
+
+   //DrawTriangle(offscreenBuffer,left,right,center,0,0,1.f);
+   //StrokeTriangle(offscreenBuffer,left,right,center,1.f,1.f,1.f);
    return;
 
 
