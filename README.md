@@ -5,8 +5,14 @@
 
 Evan's Notes:
 
+Todo:
 
 
-
-
-day28
+Add alpha to all drawing functions (bit maps?)
+Get new Memory Allocator working
+- Memory Bank
+- AllocateMemory
+- AllocateMemoryFast
+- FreeMemory
+Add "Test" button to test functionality
+Add debug logger 
