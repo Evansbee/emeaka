@@ -372,6 +372,21 @@ void *AllocateMemory(MemoryBank *bank, size_t size)
    return returnValue;
 }
 
+void DumpMemoryBank(MemoryBank *bank)
+{
+   printf("MEMORY BANK DEBUG DUMP:::\n");
+   printf("Bank Start Address: %p\n",bank->Start);
+   printf("Bank Size: %zu/%zu\n",bank->Used, bank->Size);
+   printf("Bank Entries: %zu\n",bank->Entries);
+}
+
+void TestMemoryAllocation(void * start, size_t maxsize)
+{
+   MemoryBank testBank;
+   InitialzeMemoryBank(&testBank, start, 1000);
+   DumpMemoryBank(&testBank);
+}
+
 //MEMORY
 internal void InitializeMemoryArena(MemoryArena *arena, void *start, size_t size)
 {
@@ -530,6 +545,8 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       gameState->leftTime = 0.f;
       gameState->rightTime = 0.f;
       gameState->centerTime = 0.f;
+
+      TestMemoryAllocation((void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)),gameMemory->PermanentStorageSize - sizeof(GameState));
       InitializeMemoryArena(&gameState->WorldMemoryArena, (void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)), gameMemory->PermanentStorageSize - sizeof(GameState));
       InitializeWorld(gameState);
       gameMemory->IsInitialized = true;
@@ -546,6 +563,10 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
          gameState->testBitmap.data = stbi_load_from_memory((const unsigned char *)bitmapFile.Contents, bitmapFile.FileSize,&gameState->testBitmap.width,&gameState->testBitmap.height,&comp,4);
          printf("Bitmap Data: %d %d %d\n",gameState->testBitmap.height, gameState->testBitmap.width, comp);
       }
+   }
+   if(inputBuffer->KeyboardInput.Key[KeyCode::R].IsDown)
+   {
+      gameMemory->IsInitialized = false;
    }
    gameState->ToneHz = 500.f + (-250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
 

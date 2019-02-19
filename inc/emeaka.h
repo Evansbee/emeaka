@@ -136,8 +136,14 @@ struct BitmapData
 struct GameState
 {
   Position PlayerPos;
+  
+  MemoryBank TestMemoryBank;
+  MemoryBank PerFrameBank;
+  MemoryBank AssetBank;
+
   MemoryArena WorldMemoryArena;
   MemoryArena FileMemoryArena;
+
   GameWorld *World;
   float ToneHz;
   float tSin;
