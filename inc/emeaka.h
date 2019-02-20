@@ -134,7 +134,7 @@ struct BitmapData
   uint8_t* data;
 };
 
-
+struct LogEntry;
 struct GameState
 {
   Position PlayerPos;
@@ -147,5 +147,6 @@ struct GameState
   float leftTime;
   float rightTime;
   float centerTime;
+  LogEntry *Logger;
   BitmapData testBitmap;
 };

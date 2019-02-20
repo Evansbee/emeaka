@@ -3,15 +3,19 @@
 #include <cmath>
 //#include <intrin.h>
 
+inline float Sqrt(float in)
+{
+   return sqrtf(in);
+}
 
 inline float Floor(float in)
 {
-   return floorf(in);
+   return (in>0)?(float(int(in))):(float(int(in-1)));
 }
 
 inline float Ceil(float in)
 {
-   return ceilf(in);
+   return Floor(in)+1.0f;
 }
 
 inline float Fmod(float in1, float in2)
@@ -26,7 +30,7 @@ inline float Round(float in)
 
 inline float Abs(float in)
 {
-   return fabsf(in);
+   return (in>0)?(in):(-1.f * in);
 }
 
 inline float Sin(float angle)

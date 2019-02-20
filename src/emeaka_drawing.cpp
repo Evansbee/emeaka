@@ -3,8 +3,8 @@
 #include "emeaka_intrinsics.h"
 #include "emeaka_platform.h"
 #include "emeaka_vector.h"
-
 #include "emeaka_font.cpp"
+
 void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float g, float b)
 {
    uint8_t _r = (uint8_t)Round(255.f * r);
@@ -206,10 +206,10 @@ extern "C" void DrawChar(GameOffscreenBuffer *offscreenBuffer, vec2i p, char c, 
    }
 }
 
-extern "C" void DrawText(GameOffscreenBuffer *offscreenBuffer, vec2i p, char *text, float r, float g, float b, float a, bool shadow)
+extern "C" void DrawText(GameOffscreenBuffer *offscreenBuffer, vec2i p, const char *text, float r, float g, float b, float a, bool shadow)
 {
    vec2i current = p;
-   for (char *c = text; *c != '\0'; ++c)
+   for (const char *c = text; *c != '\0'; ++c)
    {
       if (*c == '\n')
       {

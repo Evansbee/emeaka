@@ -2,8 +2,10 @@
 #include "emeaka_intrinsics.h"
 #include <cstdio>
 
+#include "emeaka_random.cpp"
 #include "emeaka_memory.cpp"
 #include "emeaka_drawing.cpp"
+#include "emeaka_string.cpp"
 
 //stb stuff
 #define STB_IMAGE_IMPLEMENTATION
@@ -161,10 +163,121 @@ void DrawBitmap(GameOffscreenBuffer *offscreenBuffer, vec2i p, BitmapData* bitma
    }
 }
 
+struct LogEntry
+{
+   char *TextString;
+   RGBA color;
+   bool On;
+   bool Fading;
+   float OnTimeLeft;
+   float FadeTimeLeft;
+   float FadeTime;
+   LogEntry *Next;
+   LogEntry *Prev;
+};
+
+//copies the string, it'll be responsible for 
+void AddToLog(LogEntry** Head, MemoryBank *bank, const char* string, RGBA color, float OnTime, float FadeTime)
+{
+   LogEntry *newEntry;
+   printf("Incoming Header: %p\n",*Head);
+   if(*Head == nullptr)
+   {
+      printf("HEAD WAS NULL MAKING ENTRY\n");
+      *Head = (LogEntry*)AllocateMemory(bank,sizeof(LogEntry));
+      printf("Head is: %p\n",*Head);
+      (*Head)->Prev = nullptr;
+      (*Head)->Next = nullptr;
+      newEntry = *Head;
+   }
+   else
+   {
+      while((*Head)->Next != nullptr)
+      {
+         *Head = (*Head)->Next;
+      }
+      newEntry = (LogEntry*)AllocateMemory(bank,sizeof(LogEntry));
+      (*Head)->Next = newEntry;
+      newEntry->Prev = *Head;
+      newEntry->Next = nullptr;
+   }
+
+   auto loglen = StringLen(string);
+   newEntry->TextString = (char *)AllocateMemory(bank, loglen+1);
+   StringCopy(string, newEntry->TextString);
+
+   newEntry->OnTimeLeft = OnTime;
+   newEntry->FadeTimeLeft = FadeTime;
+   newEntry->FadeTime = FadeTime;
+
+   newEntry->On = true;
+   newEntry->Fading = false;
+
+   newEntry->color = color;
+}
+
+void DisplayLog(LogEntry** logHead, GameOffscreenBuffer *buf, vec2i p, float dt)
+{
+   //if we're done with an item we have to both free the string and free the log entry
+
+
+   while(*logHead != nullptr)
+   {
+      float r = (float)(*logHead)->color.r/255.f;
+      float g = (float)(*logHead)->color.g/255.f;
+      float b = (float)(*logHead)->color.b/255.f;
+      float a = (float)(*logHead)->color.a/255.f;
+
+      if((*logHead)->On)
+      {
+         (*logHead)->OnTimeLeft -= dt;
+         if((*logHead)->OnTimeLeft < 0)
+         {
+            (*logHead)->On = false;
+            (*logHead)->Fading = true;
+         }
+         DrawText(buf,p,(*logHead)->TextString,r,g,b,a,true);
+         p.y += FixedFontYAdvance;
+         *logHead = (*logHead)->Next;
+      } 
+      else if((*logHead)->Fading)
+      {
+         (*logHead)->FadeTimeLeft -= dt;
+         if((*logHead)->FadeTimeLeft < 0)
+         {
+            (*logHead)->On = false;
+            (*logHead)->Fading = false;
+            (*logHead)->FadeTimeLeft = 0;
+         }
+         float alphaScale = (*logHead)->FadeTimeLeft / (*logHead)->FadeTime;
+         DrawText(buf,p,(*logHead)->TextString,r,g,b,a*alphaScale,true);
+         p.y += FixedFontYAdvance;
+         *logHead = (*logHead)->Next;
+      }
+      else
+      {
+         printf("Deleting item: %p\n",*logHead);
+         if((*logHead)->Prev != nullptr)
+         {
+            (*logHead)->Prev->Next = (*logHead)->Next;
+         }
+         if((*logHead)->Next != nullptr)
+         {
+            (*logHead)->Next->Prev = (*logHead)->Prev;
+         }
+         LogEntry *toDelete = *logHead;
+         *logHead = (*logHead)->Next;
+         FreeMemory(toDelete->TextString);
+         FreeMemory(toDelete);
+         toDelete = nullptr;   
+      }    
+   }
+}
+
 extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *gameMemory, GameOffscreenBuffer *offscreenBuffer, GameInputBuffer *inputBuffer, GameClocks *gameClocks)
 {
    Assert(sizeof(GameState) <= gameMemory->PermanentStorageSize, "Permanent Storage Inadequate");
-
+  
    GameState *gameState = (GameState *)gameMemory->PermanentStorage;
    if (!gameMemory->IsInitialized)
    {
@@ -178,6 +291,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       gameState->leftTime = 0.f;
       gameState->rightTime = 0.f;
       gameState->centerTime = 0.f;
+      gameState->Logger = nullptr;
 
       InitialzeMemoryBank(&gameState->WorldMemoryBank, (void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)), gameMemory->PermanentStorageSize - sizeof(GameState));
       InitializeWorld(gameState);
@@ -189,10 +303,19 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
          int comp = 4;
          gameState->testBitmap.data = stbi_load_from_memory((const unsigned char *)bitmapFile.Contents, bitmapFile.FileSize,&gameState->testBitmap.width,&gameState->testBitmap.height,&comp,4);
       }
+      RGBA color;
+      color.g = 255;
+      AddToLog(&gameState->Logger,&gameState->WorldMemoryBank,"[NOTICE] Game Memory Initialized", color, 5.0f, 1.0f);
    }
    if(inputBuffer->KeyboardInput.Key[KeyCode::R].IsDown)
    {
       gameMemory->IsInitialized = false;
+   }
+   if(inputBuffer->KeyboardInput.Key[KeyCode::M].IsDown && inputBuffer->KeyboardInput.Key[KeyCode::M].HalfTransitions > 0)
+   {
+      RGBA color;
+      color.g = 255;
+      AddToLog(&gameState->Logger,&gameState->WorldMemoryBank,"[NOTICE] M Key Pressed;", color, 5.0f, 1.0f);
    }
    gameState->ToneHz = 500.f + (-250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
 
@@ -233,17 +356,21 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    //DrawCircle(offscreenBuffer,vec2i(350,250),150,1,0.2f,0.3f,.5);
    //StrokeCircle(offscreenBuffer,vec2i(350,250),150,1.0f,1.0f,1.0f);
    
-   DrawCircle(offscreenBuffer,left,150,1.0f,0,0,.75f);
+   float leftalpha = Simplex2D((float)left.x/100.f, (float)left.y/100.f);
+   float centeralpha = Simplex2D((float)center.x/100.f, (float)center.y/100.f);
+   float rightalpha = Simplex2D((float)right.x/100.f, (float)right.y/100.f);
+   DrawCircle(offscreenBuffer,left,150,1.0f,0,0,leftalpha);
    StrokeCircle(offscreenBuffer,left,150,1.f,1.f,1.f);
    
-   DrawCircle(offscreenBuffer,center,150,0.0f,1,0,.75f);
+   DrawCircle(offscreenBuffer,center,150,0.0f,1,0,centeralpha);
    StrokeCircle(offscreenBuffer,center,150,1.f,1.f,1.f);
 
-   DrawCircle(offscreenBuffer,right,150,0.0f,0,1,.75f);
+   DrawCircle(offscreenBuffer,right,150,0.0f,0,1,rightalpha);
    StrokeCircle(offscreenBuffer,right,150,1.f,1.f,1.f);
 
    //DrawTriangle(offscreenBuffer,left,right,center,0,0,1.f);
    //StrokeTriangle(offscreenBuffer,left,right,center,1.f,1.f,1.f);
+   DisplayLog(&gameState->Logger,offscreenBuffer,vec2i(10,10),gameClocks->UpdateDT);
    return;
 
 
