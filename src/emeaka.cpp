@@ -184,7 +184,7 @@ void AddToLog(LogEntry** Head, MemoryBank *bank, const char* string, RGBA color,
    if(*Head == nullptr)
    {
       printf("HEAD WAS NULL MAKING ENTRY\n");
-      *Head = (LogEntry*)AllocateMemory(bank,sizeof(LogEntry));
+      *Head = (LogEntry *)AllocateMemory(bank,sizeof(LogEntry));
       printf("Head is: %p\n",*Head);
       (*Head)->Prev = nullptr;
       (*Head)->Next = nullptr;
@@ -192,13 +192,14 @@ void AddToLog(LogEntry** Head, MemoryBank *bank, const char* string, RGBA color,
    }
    else
    {
-      while((*Head)->Next != nullptr)
+      LogEntry *cursor = *Head;
+      while(cursor->Next != nullptr)
       {
-         *Head = (*Head)->Next;
+         cursor = cursor->Next;
       }
       newEntry = (LogEntry*)AllocateMemory(bank,sizeof(LogEntry));
-      (*Head)->Next = newEntry;
-      newEntry->Prev = *Head;
+      cursor->Next = newEntry;
+      newEntry->Prev = cursor;
       newEntry->Next = nullptr;
    }
 
@@ -219,54 +220,60 @@ void AddToLog(LogEntry** Head, MemoryBank *bank, const char* string, RGBA color,
 void DisplayLog(LogEntry** logHead, GameOffscreenBuffer *buf, vec2i p, float dt)
 {
    //if we're done with an item we have to both free the string and free the log entry
-
-
-   while(*logHead != nullptr)
+   //printf("Displaying Log - Header = %p\n",*logHead);
+   LogEntry *cursor = *logHead;
+   while(cursor != nullptr)
    {
-      float r = (float)(*logHead)->color.r/255.f;
-      float g = (float)(*logHead)->color.g/255.f;
-      float b = (float)(*logHead)->color.b/255.f;
-      float a = (float)(*logHead)->color.a/255.f;
+      float r = (float)cursor->color.r/255.f;
+      float g = (float)cursor->color.g/255.f;
+      float b = (float)cursor->color.b/255.f;
+      float a = (float)cursor->color.a/255.f;
 
-      if((*logHead)->On)
+      if(cursor->On)
       {
-         (*logHead)->OnTimeLeft -= dt;
-         if((*logHead)->OnTimeLeft < 0)
+         cursor->OnTimeLeft -= dt;
+         if(cursor->OnTimeLeft < 0)
          {
-            (*logHead)->On = false;
-            (*logHead)->Fading = true;
+            cursor->On = false;
+            cursor->Fading = true;
+            printf("Done Drawing,fading now\n");
          }
-         DrawText(buf,p,(*logHead)->TextString,r,g,b,a,true);
+         DrawText(buf,p,cursor->TextString,r,g,b,a,true);
          p.y += FixedFontYAdvance;
-         *logHead = (*logHead)->Next;
+         cursor = cursor->Next;
       } 
-      else if((*logHead)->Fading)
+      else if(cursor->Fading)
       {
-         (*logHead)->FadeTimeLeft -= dt;
-         if((*logHead)->FadeTimeLeft < 0)
+         cursor->FadeTimeLeft -= dt;
+         if(cursor->FadeTimeLeft < 0)
          {
-            (*logHead)->On = false;
-            (*logHead)->Fading = false;
-            (*logHead)->FadeTimeLeft = 0;
+            cursor->On = false;
+            cursor->Fading = false;
+            cursor->FadeTimeLeft = 0;
          }
-         float alphaScale = (*logHead)->FadeTimeLeft / (*logHead)->FadeTime;
-         DrawText(buf,p,(*logHead)->TextString,r,g,b,a*alphaScale,true);
+         float alphaScale = cursor->FadeTimeLeft / cursor->FadeTime;
+         DrawText(buf,p,cursor->TextString,r,g,b,a*alphaScale,true);
          p.y += FixedFontYAdvance;
-         *logHead = (*logHead)->Next;
+         cursor = cursor->Next;
       }
       else
       {
-         printf("Deleting item: %p\n",*logHead);
-         if((*logHead)->Prev != nullptr)
+         printf("Deleting...\nCursor: %p, Next: %p, Prev: %p\n",cursor, cursor->Next, cursor->Prev);
+         if(cursor->Prev != nullptr)
          {
-            (*logHead)->Prev->Next = (*logHead)->Next;
+            cursor->Prev->Next = cursor->Next;
          }
-         if((*logHead)->Next != nullptr)
+         if(cursor->Next != nullptr)
          {
-            (*logHead)->Next->Prev = (*logHead)->Prev;
+            cursor->Next->Prev = cursor->Prev;
          }
-         LogEntry *toDelete = *logHead;
-         *logHead = (*logHead)->Next;
+         LogEntry *toDelete = cursor;
+
+         if(cursor == *logHead)
+         {
+            *logHead = cursor->Next;
+         }
+         cursor = cursor->Next;
          FreeMemory(toDelete->TextString);
          FreeMemory(toDelete);
          toDelete = nullptr;   
@@ -292,7 +299,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       gameState->rightTime = 0.f;
       gameState->centerTime = 0.f;
       gameState->Logger = nullptr;
-
+      printf("Log Entry Size: sizeof(LogEntry): %zu\n",sizeof(LogEntry));
       InitialzeMemoryBank(&gameState->WorldMemoryBank, (void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)), gameMemory->PermanentStorageSize - sizeof(GameState));
       InitializeWorld(gameState);
       gameMemory->IsInitialized = true;
@@ -305,6 +312,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       }
       RGBA color;
       color.g = 255;
+      color.a = 255;
       AddToLog(&gameState->Logger,&gameState->WorldMemoryBank,"[NOTICE] Game Memory Initialized", color, 5.0f, 1.0f);
    }
    if(inputBuffer->KeyboardInput.Key[KeyCode::R].IsDown)
@@ -315,6 +323,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    {
       RGBA color;
       color.g = 255;
+      color.a = 255;
       AddToLog(&gameState->Logger,&gameState->WorldMemoryBank,"[NOTICE] M Key Pressed;", color, 5.0f, 1.0f);
    }
    gameState->ToneHz = 500.f + (-250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
