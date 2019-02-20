@@ -673,7 +673,7 @@ int main(int argc, char **argv)
                 float megaCycles = (float)lastElapsedCycles / (float)1000000.f;
                 char fpsString[128];
                 snprintf(fpsString, 128, "FPS: %0.1f UpdateTime: %0.2fms LastCycles: %0.2f MCycles", lastFPS, 1000.f * lastElapsedTime, megaCycles);
-                dynamicGame.APIFunctions.DrawText((GameOffscreenBuffer *)&offscreenBuffer, vec2i(16, 100), fpsString, 1.f, 1.f, 1.f, true);
+                dynamicGame.APIFunctions.DrawText((GameOffscreenBuffer *)&offscreenBuffer, vec2i(16, 100), fpsString, 1.f, 1.f, 1.f, 1.f, true);
 
                 float preAudioFrameTime = OSXGetSecondsElapsed(lastCounter, SDL_GetPerformanceCounter());
                 SDL_LockAudioDevice(audioBuffer.AudioDevice);

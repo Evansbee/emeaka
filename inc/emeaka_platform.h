@@ -134,13 +134,13 @@ struct ThreadContext
 };
 
 
-#define PLATFORM_READ_ENTIRE_FILE(name) DebugFileResult name(ThreadContext *threadContext, char *filename)
+#define PLATFORM_READ_ENTIRE_FILE(name) DebugFileResult name(ThreadContext *threadContext, const char *filename)
 typedef PLATFORM_READ_ENTIRE_FILE(PlatformReadEntireFileType);
 
 #define PLATFORM_FREE_FILE_MEMORY(name) void name(ThreadContext *threadContext, void *memory)
 typedef PLATFORM_FREE_FILE_MEMORY(PlatformFreeFileMemoryType);
 
-#define PLATFORM_WRITE_ENTIRE_FILE(name) bool name(ThreadContext *threadContext, char *filename, size_t memorySize, void *memory)
+#define PLATFORM_WRITE_ENTIRE_FILE(name) bool name(ThreadContext *threadContext, const char *filename, size_t memorySize, void *memory)
 typedef PLATFORM_WRITE_ENTIRE_FILE(PlatformWriteEntireFileType);
 
 
@@ -176,10 +176,10 @@ typedef GAME_UPDATE_AND_RENDER(GameUpdateAndRenderType);
 typedef GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesType);
 
 
-#define GAME_DRAW_LINE(name) void name(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b)
+#define GAME_DRAW_LINE(name) void name(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b, float a)
 typedef GAME_DRAW_LINE(GameDrawLineType);
 
-#define GAME_DRAW_TEXT(name) void name(GameOffscreenBuffer *offscreenBuffer, vec2i p, char* text, float r, float g, float b, bool shadow)
+#define GAME_DRAW_TEXT(name) void name(GameOffscreenBuffer *offscreenBuffer, vec2i p, char* text, float r, float g, float b, float a, bool shadow)
 typedef GAME_DRAW_TEXT(GameDrawTextType);
 
 

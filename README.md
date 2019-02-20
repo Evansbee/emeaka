@@ -7,12 +7,9 @@ Evan's Notes:
 
 Todo:
 
+add memory 
+- AllocateMemoryFast -> always just grabs the last item without the search?
 
-Add alpha to all drawing functions (bit maps?)
-Get new Memory Allocator working
-- Memory Bank
-- AllocateMemory
-- AllocateMemoryFast
-- FreeMemory
-Add "Test" button to test functionality
-Add debug logger 
+more fonts? actual font rendering?
+
+

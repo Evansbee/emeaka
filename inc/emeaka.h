@@ -90,13 +90,15 @@ struct GameWorld
    
 };
 
+struct MemoryBank;
 
 struct MemoryAllocationHeader
 {
   size_t Size;
   bool InUse;
   MemoryAllocationHeader *Previous; //points to the header
-  MemoryAllocationHeader *Next; //points to the header 
+  MemoryAllocationHeader *Next; //points to the header
+  MemoryBank *Bank; 
 };
 
 struct MemoryBank
@@ -137,12 +139,7 @@ struct GameState
 {
   Position PlayerPos;
   
-  MemoryBank TestMemoryBank;
-  MemoryBank PerFrameBank;
-  MemoryBank AssetBank;
-
-  MemoryArena WorldMemoryArena;
-  MemoryArena FileMemoryArena;
+  MemoryBank WorldMemoryBank;
 
   GameWorld *World;
   float ToneHz;
