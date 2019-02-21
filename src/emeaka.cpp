@@ -11,8 +11,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_NO_STDIO
 #define STBI_ONLY_BMP
+#define STBI_MALLOC GlobalMemoryBankMalloc
+#define STBI_REALLOC GlobalMemoryBankRealloc
+#define STBI_FREE GlobalMemoryBankFree
 #include "stb_image.h"
-
 
 
 
@@ -180,12 +182,9 @@ struct LogEntry
 void AddToLog(LogEntry** Head, MemoryBank *bank, const char* string, RGBA color, float OnTime, float FadeTime)
 {
    LogEntry *newEntry;
-   printf("Incoming Header: %p\n",*Head);
    if(*Head == nullptr)
    {
-      printf("HEAD WAS NULL MAKING ENTRY\n");
       *Head = (LogEntry *)AllocateMemory(bank,sizeof(LogEntry));
-      printf("Head is: %p\n",*Head);
       (*Head)->Prev = nullptr;
       (*Head)->Next = nullptr;
       newEntry = *Head;
@@ -236,7 +235,6 @@ void DisplayLog(LogEntry** logHead, GameOffscreenBuffer *buf, vec2i p, float dt)
          {
             cursor->On = false;
             cursor->Fading = true;
-            printf("Done Drawing,fading now\n");
          }
          DrawText(buf,p,cursor->TextString,r,g,b,a,true);
          p.y += FixedFontYAdvance;
@@ -258,7 +256,6 @@ void DisplayLog(LogEntry** logHead, GameOffscreenBuffer *buf, vec2i p, float dt)
       }
       else
       {
-         printf("Deleting...\nCursor: %p, Next: %p, Prev: %p\n",cursor, cursor->Next, cursor->Prev);
          if(cursor->Prev != nullptr)
          {
             cursor->Prev->Next = cursor->Next;
@@ -286,6 +283,11 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    Assert(sizeof(GameState) <= gameMemory->PermanentStorageSize, "Permanent Storage Inadequate");
   
    GameState *gameState = (GameState *)gameMemory->PermanentStorage;
+   
+   //this lets us throw random shit into our global memory bank.  useful for stb
+   SetGlobalMemoryBank(&gameState->WorldMemoryBank);
+
+
    if (!gameMemory->IsInitialized)
    {
       gameState->PlayerPos.Tile.x = 5;
@@ -299,12 +301,12 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       gameState->rightTime = 0.f;
       gameState->centerTime = 0.f;
       gameState->Logger = nullptr;
-      printf("Log Entry Size: sizeof(LogEntry): %zu\n",sizeof(LogEntry));
       InitialzeMemoryBank(&gameState->WorldMemoryBank, (void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)), gameMemory->PermanentStorageSize - sizeof(GameState));
       InitializeWorld(gameState);
       gameMemory->IsInitialized = true;
       DebugFileResult bitmapFile = gameMemory->PlatformFunctions.PlatformReadEntireFile(threadContext, "bmptest.bmp");
 
+      SetGlobalMemoryBank(&gameState->WorldMemoryBank);
       if(bitmapFile.FileSize > 0)
       {
          int comp = 4;
@@ -315,6 +317,10 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       color.a = 255;
       AddToLog(&gameState->Logger,&gameState->WorldMemoryBank,"[NOTICE] Game Memory Initialized", color, 5.0f, 1.0f);
    }
+
+
+
+
    if(inputBuffer->KeyboardInput.Key[KeyCode::R].IsDown)
    {
       gameMemory->IsInitialized = false;
