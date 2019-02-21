@@ -44,5 +44,27 @@ if(info.Found)
 {
     void *fileData = AllocateMemory(&FileMemoryBank, info.Size);
     LoadFileToBuffer(tc, info.FullPath, fileData);
+}
+
+the platform needs to find a path to the resource directory as well
+
+How do we want to handle globals? We need a "global" memory bank that everything can use so we can pass around a "Malloc" to various things...what if we want to use std::vector<something, myMalloc()>
+
+void SetGlobalMemoryBank(MemoryBank *mb)
+{
 
 }
+
+//what if we serviced some of these globals every frame?
+
+void* EmeakaMalloc(size_t requestedSize)
+{
+    MemoryBank *mb = GetGlobalMemoryBank(MemoryBank *mb);
+    return AllocateMemory(mb, requestedSize);
+}
+
+void EmeakaFree(void* ptr)
+{
+    FreeMemory(ptr);
+}
+
