@@ -7,6 +7,8 @@
 #include "emeaka_drawing.cpp"
 #include "emeaka_string.cpp"
 
+#include "Fonts/Proggy16ptFont.h"
+
 //stb stuff
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_NO_STDIO
@@ -236,8 +238,10 @@ void DisplayLog(LogEntry** logHead, GameOffscreenBuffer *buf, vec2i p, float dt)
             cursor->On = false;
             cursor->Fading = true;
          }
-         DrawText(buf,p,cursor->TextString,r,g,b,a,true);
-         p.y += FixedFontYAdvance;
+         
+         DrawNewText(buf,p,&Proggy16ptFont,cursor->TextString,r,g,b,a);
+         //DrawText(buf,p,cursor->TextString,r,g,b,a,true);
+         p.y += Proggy16ptFont.LineStep;
          cursor = cursor->Next;
       } 
       else if(cursor->Fading)
@@ -250,8 +254,8 @@ void DisplayLog(LogEntry** logHead, GameOffscreenBuffer *buf, vec2i p, float dt)
             cursor->FadeTimeLeft = 0;
          }
          float alphaScale = cursor->FadeTimeLeft / cursor->FadeTime;
-         DrawText(buf,p,cursor->TextString,r,g,b,a*alphaScale,true);
-         p.y += FixedFontYAdvance;
+         DrawNewText(buf,p,&Proggy16ptFont,cursor->TextString,r,g,b,a*alphaScale);
+         p.y += Proggy16ptFont.LineStep;
          cursor = cursor->Next;
       }
       else

@@ -134,6 +134,25 @@ struct BitmapData
   uint8_t* data;
 };
 
+struct GlyphInformation
+{
+  size_t DataBufferStartPoint;
+  int Height;
+  int Width;
+  int YOffset;
+  int XOffset;
+  int XAdvance;
+};
+
+struct FontInformation
+{
+  int FirstGlyph;
+  int LastGlyph;
+  int LineStep;
+  uint8_t* FontBitmapData;
+  GlyphInformation* GlyphData;
+};
+
 struct LogEntry;
 struct GameState
 {

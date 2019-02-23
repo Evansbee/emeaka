@@ -224,6 +224,52 @@ extern "C" void DrawText(GameOffscreenBuffer *offscreenBuffer, vec2i p, const ch
    }
 }
 
+void DrawNewChar(GameOffscreenBuffer *osb, vec2i p, const FontInformation* font, char c, float r, float g, float b, float a)
+{
+   int width = font->GlyphData[c-font->FirstGlyph].Width;
+   int height = font->GlyphData[c-font->FirstGlyph].Height;
+   GlyphInformation *ThisGlyph = &(font->GlyphData[c-font->FirstGlyph]);
+   for(int ploty = 0; ploty < height; ++ploty)
+   {
+      for(int plotx = 0; plotx < width; ++plotx)
+      {
+         float avalue = (float)(font->FontBitmapData[ThisGlyph->DataBufferStartPoint + (ploty * width) + plotx])/255.f;
+         if(avalue > 0.f)
+         {
+            DrawPixel(osb, vec2i(p.x + plotx + ThisGlyph->XOffset, p.y + ploty + ThisGlyph->YOffset), r, g, b, a*avalue);
+         }
+      }
+   }
+}
+void DrawNewText(GameOffscreenBuffer *osb, vec2i p, const FontInformation* font, const char *text, float r, float g, float b, float a)
+{
+   vec2i current = p;
+   for (const char *c = text; *c != '\0'; ++c)
+   {
+      if(*c >= font->FirstGlyph && *c <= font->LastGlyph)
+      {
+         if (*c == '\n')
+         {
+            current.y += font->LineStep;
+            current.x = p.x;
+         }
+         else
+         {
+            DrawNewChar(osb, current, font, *c, r, g, b, a);
+            current.x += font->GlyphData[*c - (uint8_t)font->FirstGlyph].XAdvance;
+         }
+      }
+      else
+      {
+         {
+            printf("BAD GLYPH: %c\n",*c);
+         }
+      }
+      
+   }
+}
+
+
 extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b, float a = 1.0f)
 {
    //not sure why i chose a lambda here...

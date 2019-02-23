@@ -194,12 +194,18 @@ internal void OSXResizeTexture(OSXOffscreenBuffer *offscreenBuffer, SDL_Renderer
         SDL_DestroyTexture(offscreenBuffer->Texture);
     }
 
-    offscreenBuffer->Texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
-    offscreenBuffer->Width = width;
-    offscreenBuffer->Height = height;
+    int newwidth, newheight;
+    SDL_GetRendererOutputSize(renderer, &newwidth, &newheight);
+
+    printf("[Info] Render Window Size: %d, %d\n", width, height);
+    printf("[Info] Renderer Output Size: %d, %d\n",newwidth,newheight);
+
+    offscreenBuffer->Texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, newwidth, newheight);
+    offscreenBuffer->Width = newwidth;
+    offscreenBuffer->Height = newheight;
     offscreenBuffer->BytesPerPixel = 4;
-    offscreenBuffer->Pitch = width * offscreenBuffer->BytesPerPixel;
-    offscreenBuffer->Memory = mmap(0, width * height * offscreenBuffer->BytesPerPixel, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+    offscreenBuffer->Pitch = newwidth * offscreenBuffer->BytesPerPixel;
+    offscreenBuffer->Memory = mmap(0, newwidth * newheight * offscreenBuffer->BytesPerPixel, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
 }
 
 internal void OSXUpdateWindow(SDL_Window *window, SDL_Renderer *renderer, OSXOffscreenBuffer *offscreenBuffer)
