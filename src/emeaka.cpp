@@ -7,7 +7,7 @@
 #include "emeaka_drawing.cpp"
 #include "emeaka_string.cpp"
 
-#include "Fonts/Proggy16ptFont.h"
+#include "Fonts/DejaVuSansMono32ptFont.h"
 
 //stb stuff
 #define STB_IMAGE_IMPLEMENTATION
@@ -239,9 +239,9 @@ void DisplayLog(LogEntry** logHead, GameOffscreenBuffer *buf, vec2i p, float dt)
             cursor->Fading = true;
          }
          
-         DrawNewText(buf,p,&Proggy16ptFont,cursor->TextString,r,g,b,a);
+         DrawNewText(buf,p,&DejaVuSansMono32ptFont,cursor->TextString,r,g,b,a);
          //DrawText(buf,p,cursor->TextString,r,g,b,a,true);
-         p.y += Proggy16ptFont.LineStep;
+         p.y += DejaVuSansMono32ptFont.LineStep;
          cursor = cursor->Next;
       } 
       else if(cursor->Fading)
@@ -254,8 +254,8 @@ void DisplayLog(LogEntry** logHead, GameOffscreenBuffer *buf, vec2i p, float dt)
             cursor->FadeTimeLeft = 0;
          }
          float alphaScale = cursor->FadeTimeLeft / cursor->FadeTime;
-         DrawNewText(buf,p,&Proggy16ptFont,cursor->TextString,r,g,b,a*alphaScale);
-         p.y += Proggy16ptFont.LineStep;
+         DrawNewText(buf,p,&DejaVuSansMono32ptFont,cursor->TextString,r,g,b,a*alphaScale);
+         p.y += DejaVuSansMono32ptFont.LineStep;
          cursor = cursor->Next;
       }
       else
@@ -338,10 +338,10 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    }
    gameState->ToneHz = 500.f + (-250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
 
-   int midy = offscreenBuffer->Height / 2;
-   int midx = offscreenBuffer->Width / 2;
-   int offsetx = offscreenBuffer->Width / 8;
-   int height = offscreenBuffer->Height / 4;
+   int midy = offscreenBuffer->TextureHeight / 2;
+   int midx = offscreenBuffer->TextureWidth / 2;
+   int offsetx = offscreenBuffer->TextureWidth / 8;
+   int height = offscreenBuffer->TextureHeight / 4;
    
 
    float leftHz=0.125f/5.f;

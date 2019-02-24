@@ -11,11 +11,11 @@ void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float g, float b
    uint8_t _g = (uint8_t)Round(255.f * g);
    uint8_t _b = (uint8_t)Round(255.f * b);
    uint32_t color = RGB_TO_UINT32(_r, _g, _b);
-   for (int y = 0; y < offscreenBuffer->Height; ++y)
+   for (int y = 0; y < offscreenBuffer->TextureHeight; ++y)
    {
-      for (int x = 0; x < offscreenBuffer->Width; ++x)
+      for (int x = 0; x < offscreenBuffer->TextureWidth; ++x)
       {
-         ((uint32_t *)(offscreenBuffer->Memory))[(y * offscreenBuffer->Width + x)] = color;
+         ((uint32_t *)(offscreenBuffer->Memory))[(y * offscreenBuffer->TextureWidth + x)] = color;
       }
    }
 }
@@ -28,21 +28,21 @@ void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2i p, float r, float g, 
    color.b = (uint8_t)Round(255.f * b);
    color.a = (uint8_t)Round(255.f * a);
    
-   if (p.x >= 0 && p.x < offscreenBuffer->Width && p.y >= 0 && p.y < offscreenBuffer->Height)
+   if (p.x >= 0 && p.x < offscreenBuffer->TextureWidth && p.y >= 0 && p.y < offscreenBuffer->TextureHeight)
    {
       if(a == 1.0f)
       {
-         ((uint32_t *)(offscreenBuffer->Memory))[(p.y * offscreenBuffer->Width) + p.x] = color.rgba;
+         ((uint32_t *)(offscreenBuffer->Memory))[(p.y * offscreenBuffer->TextureWidth) + p.x] = color.rgba;
       }
       else if (a > 0.f && a < 1.f)
       {
          RGBA currentColor;
-         currentColor.rgba = ((uint32_t *)(offscreenBuffer->Memory))[(p.y * offscreenBuffer->Width) + p.x];
+         currentColor.rgba = ((uint32_t *)(offscreenBuffer->Memory))[(p.y * offscreenBuffer->TextureWidth) + p.x];
 
          color.r = Round(255.f * (r * a + ((float)currentColor.r/255.f) * (1.0f - a)));
          color.g = Round(255.f * (g * a + ((float)currentColor.g/255.f) * (1.0f - a)));
          color.b = Round(255.f * (b * a + ((float)currentColor.b/255.f) * (1.0f - a)));
-         ((uint32_t *)(offscreenBuffer->Memory))[(p.y * offscreenBuffer->Width) + p.x] = color.rgba;
+         ((uint32_t *)(offscreenBuffer->Memory))[(p.y * offscreenBuffer->TextureWidth) + p.x] = color.rgba;
       }
    }
 }
@@ -61,9 +61,9 @@ internal void DrawHorizontalLine(GameOffscreenBuffer *osb, vec2i p0, vec2i p1, f
       x0 = 0;
    }
 
-   if(x1 >= osb->Width)
+   if(x1 >= osb->TextureWidth)
    {
-      x1 = osb->Width-1;
+      x1 = osb->TextureWidth-1;
    }
 
    for(auto x = x0; x <= x1; ++x)
@@ -185,7 +185,7 @@ void DrawCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, float
 extern "C" void DrawChar(GameOffscreenBuffer *offscreenBuffer, vec2i p, char c, float r, float g, float b, float a, bool shadow)
 {
    //wipe it
-   if (p.x < -(int64_t)FixedFontWidth || p.x > offscreenBuffer->Width || p.y < -(int64_t)FixedFontHeight || p.y > offscreenBuffer->Height)
+   if (p.x < -(int64_t)FixedFontWidth || p.x > offscreenBuffer->TextureWidth || p.y < -(int64_t)FixedFontHeight || p.y > offscreenBuffer->TextureHeight)
    {
       return;
    }
@@ -256,7 +256,7 @@ void DrawNewText(GameOffscreenBuffer *osb, vec2i p, const FontInformation* font,
          else
          {
             DrawNewChar(osb, current, font, *c, r, g, b, a);
-            current.x += font->GlyphData[*c - (uint8_t)font->FirstGlyph].XAdvance;
+            current.x += font->GlyphData[*c - font->FirstGlyph].XAdvance;
          }
       }
       else

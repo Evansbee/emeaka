@@ -40,8 +40,8 @@ void InitialzeMemoryBank(MemoryBank *bank, void *start, size_t size)
 
 void *AllocateMemory(MemoryBank *bank, size_t size)
 {
-   printf("Allocating %zu bytes\n",size);
-   printf("Usage: %zuKB/%zuKB\n",bank->Used/KiloBytes(1), bank->Size/KiloBytes(1));
+   //printf("Allocating %zu bytes\n",size);
+   //printf("Usage: %zuKB/%zuKB\n",bank->Used/KiloBytes(1), bank->Size/KiloBytes(1));
    MemoryAllocationHeader *current = (MemoryAllocationHeader *)bank->Start;
 
    while(current->InUse || current->Size < size)
@@ -94,9 +94,14 @@ void FreeMemory(void *address)
 {
    
    MemoryAllocationHeader *header = (MemoryAllocationHeader *)((size_t)address - sizeof(MemoryAllocationHeader));
+   if(!header->InUse)
+   {
+      printf("FREE UNUSED MEMORY\n");
+   }
    header->InUse = false;
+   
    header->Bank->Used -= header->Size;
-   printf("Freeing: %zu bytes\n",header->Size);
+   //printf("Freeing: %zu bytes\n",header->Size);
    if(header->Next && !header->Next->InUse)
    {
       //combine with next

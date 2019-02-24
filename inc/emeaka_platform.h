@@ -23,8 +23,10 @@ enum KeyCode : size_t
 struct GameOffscreenBuffer
 {
   void *Memory;
-  int Height;
-  int Width;
+  int WindowHeight;
+  int WindowWidth;
+  int TextureHeight;
+  int TextureWidth;
   int BytesPerPixel;
   int Pitch;
 };

@@ -182,11 +182,11 @@ PLATFORM_WRITE_ENTIRE_FILE(OSXDebugWriteEntireFile)
     return false;
 }
 #endif
-internal void OSXResizeTexture(OSXOffscreenBuffer *offscreenBuffer, SDL_Renderer *renderer, int width, int height)
+internal void OSXResizeTexture(OSXOffscreenBuffer *offscreenBuffer, SDL_Renderer *renderer, int windowwidth, int windowheight)
 {
     if (offscreenBuffer->Memory)
     {
-        munmap(offscreenBuffer->Memory, offscreenBuffer->Width * offscreenBuffer->Height * offscreenBuffer->BytesPerPixel);
+        munmap(offscreenBuffer->Memory, offscreenBuffer->TextureWidth * offscreenBuffer->TextureHeight * offscreenBuffer->BytesPerPixel);
     }
 
     if (offscreenBuffer->Texture)
@@ -194,18 +194,17 @@ internal void OSXResizeTexture(OSXOffscreenBuffer *offscreenBuffer, SDL_Renderer
         SDL_DestroyTexture(offscreenBuffer->Texture);
     }
 
-    int newwidth, newheight;
-    SDL_GetRendererOutputSize(renderer, &newwidth, &newheight);
+    SDL_GetRendererOutputSize(renderer, &offscreenBuffer->TextureWidth, &offscreenBuffer->TextureHeight);
 
-    printf("[Info] Render Window Size: %d, %d\n", width, height);
-    printf("[Info] Renderer Output Size: %d, %d\n",newwidth,newheight);
+    printf("[Info] Render Window Size: %d, %d\n", windowwidth, windowheight);
+    printf("[Info] Renderer Output Size: %d, %d\n",offscreenBuffer->TextureWidth,offscreenBuffer->TextureHeight);
 
-    offscreenBuffer->Texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, newwidth, newheight);
-    offscreenBuffer->Width = newwidth;
-    offscreenBuffer->Height = newheight;
+    offscreenBuffer->Texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, offscreenBuffer->TextureWidth, offscreenBuffer->TextureHeight);
+    offscreenBuffer->WindowWidth = windowwidth;
+    offscreenBuffer->WindowHeight = windowheight;
     offscreenBuffer->BytesPerPixel = 4;
-    offscreenBuffer->Pitch = newwidth * offscreenBuffer->BytesPerPixel;
-    offscreenBuffer->Memory = mmap(0, newwidth * newheight * offscreenBuffer->BytesPerPixel, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+    offscreenBuffer->Pitch = offscreenBuffer->TextureWidth * offscreenBuffer->BytesPerPixel;
+    offscreenBuffer->Memory = mmap(0, offscreenBuffer->TextureWidth * offscreenBuffer->TextureHeight * offscreenBuffer->BytesPerPixel, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
 }
 
 internal void OSXUpdateWindow(SDL_Window *window, SDL_Renderer *renderer, OSXOffscreenBuffer *offscreenBuffer)

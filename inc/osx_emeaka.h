@@ -6,8 +6,10 @@
 struct OSXOffscreenBuffer
 {
   void *Memory;
-  int Height;
-  int Width;
+  int WindowHeight;
+  int WindowWidth;
+  int TextureHeight;
+  int TextureWidth;
   int BytesPerPixel;
   int Pitch;
   SDL_Texture *Texture;
