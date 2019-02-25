@@ -205,7 +205,7 @@ void AddToLog(LogEntry** Head, MemoryBank *bank, const char* string, RGBA color,
    }
 
    auto loglen = StringLen(string);
-   newEntry->TextString = (char *)AllocateMemory(bank, loglen+1);
+   newEntry->TextString = (char *)AllocateMemory(bank, loglen+1 + rand() %1000);
    StringCopy(string, newEntry->TextString);
 
    newEntry->OnTimeLeft = OnTime;
@@ -332,10 +332,19 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    if(inputBuffer->KeyboardInput.Key[KeyCode::M].IsDown && inputBuffer->KeyboardInput.Key[KeyCode::M].HalfTransitions > 0)
    {
       RGBA color;
-      color.g = 255;
+      color.g = rand() %255;
+      color.b = rand() %255;
+      color.a = rand()  %255;
       color.a = 255;
-      AddToLog(&gameState->Logger,&gameState->WorldMemoryBank,"[NOTICE] M Key Pressed;", color, 5.0f, 1.0f);
+      float run = (rand() % 10);
+      float fade =rand() % 10;
+      AddToLog(&gameState->Logger,&gameState->WorldMemoryBank,"[NOTICE] M Key Pressed;", color, run, fade);
    }
+   if(inputBuffer->KeyboardInput.Key[KeyCode::D].IsDown && inputBuffer->KeyboardInput.Key[KeyCode::D].HalfTransitions > 0)
+   {
+      DumpMemoryBank(&gameState->WorldMemoryBank);
+   }
+
    gameState->ToneHz = 500.f + (-250.f * inputBuffer->ControllerInput[0].RightStick.AverageY);
 
    int midy = offscreenBuffer->TextureHeight / 2;
@@ -386,7 +395,9 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
 
    DrawCircle(offscreenBuffer,right,150,0.0f,0,1,rightalpha);
    StrokeCircle(offscreenBuffer,right,150,1.f,1.f,1.f);
-
+   char memorydiag[256];
+   snprintf(memorydiag,256,"Used: %zuKB/%zuKB, Entries: %zu",gameState->WorldMemoryBank.Used/KiloBytes(1),gameState->WorldMemoryBank.Size/KiloBytes(1), gameState->WorldMemoryBank.Entries);
+   DrawNewText(offscreenBuffer,vec2i(50,offscreenBuffer->TextureHeight-50), &DejaVuSansMono32ptFont,memorydiag,1,1,1,1);
    //DrawTriangle(offscreenBuffer,left,right,center,0,0,1.f);
    //StrokeTriangle(offscreenBuffer,left,right,center,1.f,1.f,1.f);
    DisplayLog(&gameState->Logger,offscreenBuffer,vec2i(10,10),gameClocks->UpdateDT);

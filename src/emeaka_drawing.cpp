@@ -243,6 +243,11 @@ void DrawNewChar(GameOffscreenBuffer *osb, vec2i p, const FontInformation* font,
 }
 void DrawNewText(GameOffscreenBuffer *osb, vec2i p, const FontInformation* font, const char *text, float r, float g, float b, float a)
 {
+   if(text == nullptr)
+   {
+      printf("TEXT WAS NULL\n");
+      return;
+   }
    vec2i current = p;
    for (const char *c = text; *c != '\0'; ++c)
    {
@@ -262,7 +267,7 @@ void DrawNewText(GameOffscreenBuffer *osb, vec2i p, const FontInformation* font,
       else
       {
          {
-            printf("BAD GLYPH: %c\n",*c);
+            printf("BAD GLYPH: %c(%d)\n",*c,*c);
          }
       }
       
