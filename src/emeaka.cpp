@@ -23,7 +23,7 @@
 void TestMemoryAllocation(void * start, size_t maxsize)
 {
    MemoryBank testBank;
-   InitialzeMemoryBank(&testBank, start, 1000);
+   InitializeMemoryBank(&testBank, start, 1000);
    DumpMemoryBank(&testBank);
    void *test1 = AllocateMemory(&testBank,100);
    void *test2 = AllocateMemory(&testBank,100);
@@ -305,7 +305,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       gameState->rightTime = 0.f;
       gameState->centerTime = 0.f;
       gameState->Logger = nullptr;
-      InitialzeMemoryBank(&gameState->WorldMemoryBank, (void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)), gameMemory->PermanentStorageSize - sizeof(GameState));
+      InitializeMemoryBank(&gameState->WorldMemoryBank, (void *)((size_t)gameMemory->PermanentStorage + sizeof(GameState)), gameMemory->PermanentStorageSize - sizeof(GameState));
       InitializeWorld(gameState);
       gameMemory->IsInitialized = true;
       DebugFileResult bitmapFile = gameMemory->PlatformFunctions.PlatformReadEntireFile(threadContext, "bmptest.bmp");
@@ -329,15 +329,15 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    {
       gameMemory->IsInitialized = false;
    }
-   if(inputBuffer->KeyboardInput.Key[KeyCode::M].IsDown && inputBuffer->KeyboardInput.Key[KeyCode::M].HalfTransitions > 0)
+   if(inputBuffer->KeyboardInput.Key[KeyCode::M].IsDown)// && inputBuffer->KeyboardInput.Key[KeyCode::M].HalfTransitions > 0)
    {
       RGBA color;
       color.g = rand() %255;
       color.b = rand() %255;
-      color.a = rand()  %255;
+      color.r = rand()  %255;
       color.a = 255;
-      float run = (rand() % 10);
-      float fade =rand() % 10;
+      float run = (rand() % 5);
+      float fade =rand() % 5;
       AddToLog(&gameState->Logger,&gameState->WorldMemoryBank,"[NOTICE] M Key Pressed;", color, run, fade);
    }
    if(inputBuffer->KeyboardInput.Key[KeyCode::D].IsDown && inputBuffer->KeyboardInput.Key[KeyCode::D].HalfTransitions > 0)

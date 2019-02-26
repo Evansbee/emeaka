@@ -2,6 +2,36 @@
 #include "catch.hpp"
 #include "emeaka_memory.cpp"
 
+bool CheckValid(MemoryBank *bank)
+{
+   MemoryAllocationHeader *cursor = (MemoryAllocationHeader *)bank->Start;
+   while (cursor != nullptr)
+   {
+      if(cursor->Next && cursor->Next->Previous != cursor)
+      {
+         return false;
+      } 
+
+      cursor = cursor->Next;
+   }
+   return true;
+}
+
+TEST_CASE("Splitting A Large Empty entry Works...","[memory]")
+{
+    MemoryBank bank;
+    void *memory = malloc(10000);
+    InitializeMemoryBank(&bank, memory, 10000);
+
+    void *test1 = AllocateMemory(&bank,1);
+    void *test2 = AllocateMemory(&bank,1000);
+    void *test3 = AllocateMemory(&bank,1);
+    REQUIRE(CheckValid(&bank));
+    FreeMemory(test2);
+    void *test4 = AllocateMemory(&bank, 1);
+    REQUIRE(CheckValid(&bank));
+}
+
 TEST_CASE("0 size gives nullptr", "[memory]")
 {
     MemoryBank bank;
@@ -143,6 +173,5 @@ TEST_CASE("Memory Freeing", "[memory]")
         REQUIRE(test1Header->Next == nullptr);
         REQUIRE(test1Header->Previous == nullptr);
         REQUIRE(bank.Used == headerSize);
-        DumpMemoryBank(&bank);
     }
 }

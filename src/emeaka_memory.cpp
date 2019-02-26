@@ -21,6 +21,25 @@ void CopyMemory(void *dst, const void *src, size_t bytes)
    memcpy(dst, src, bytes);
 }
 
+void DumpMemoryBank(MemoryBank *bank)
+{
+   printf(":::::START MEMORY DUMP:::::\n");
+   printf("Start: %p, Size: %zu/%zu, Entries: %zu\n", bank->Start, bank->Used, bank->Size, bank->Entries);
+   printf("Entries...\n");
+
+   size_t i = 1;
+   MemoryAllocationHeader *cursor = (MemoryAllocationHeader *)bank->Start;
+   while (cursor != nullptr)
+   {
+      printf("%zu: [%p, S: %zu, Prev: %p, Next: %p, In Use: %d]\n",
+             i++, cursor,
+             cursor->Size, cursor->Previous, cursor->Next, cursor->InUse);
+
+      cursor = cursor->Next;
+   }
+   printf(":::::END MEMORY DUMP:::::\n");
+}
+
 void InitializeMemoryBank(MemoryBank *bank, void *start, size_t size)
 {
    bank->Start = start;
@@ -39,8 +58,6 @@ void InitializeMemoryBank(MemoryBank *bank, void *start, size_t size)
 
 void *AllocateMemory(MemoryBank *bank, size_t size)
 {
-   //printf("Allocating %zu bytes\n",size);
-   //printf("Usage: %zuKB/%zuKB\n",bank->Used/KiloBytes(1), bank->Size/KiloBytes(1));
    if(size == 0 || bank == nullptr)
    {
       return nullptr;
@@ -71,6 +88,11 @@ void *AllocateMemory(MemoryBank *bank, size_t size)
       MemoryAllocationHeader *newHeader = (MemoryAllocationHeader *)((size_t)returnValue + size);
       newHeader->Previous = current;
       newHeader->Next = current->Next;
+      if(newHeader->Next)
+      {
+         //this fixes a major problem...
+         newHeader->Next->Previous = newHeader;
+      }
       current->Next = newHeader;
       newHeader->InUse = false;
       newHeader->Size = leftOverSize - sizeof(MemoryAllocationHeader);
@@ -89,6 +111,7 @@ void *AllocateMemory(MemoryBank *bank, size_t size)
       bank->Used += current->Size;
    }
    //add new header afterwards...
+
    return returnValue;
 }
 
@@ -106,10 +129,13 @@ void CombineWithNextHeader(MemoryAllocationHeader* header)
       header->Bank->Used -= sizeof(MemoryAllocationHeader);
 }
 
+
 void FreeMemory(void *address)
 {
 
    MemoryAllocationHeader *header = (MemoryAllocationHeader *)((size_t)address - sizeof(MemoryAllocationHeader));
+   MemoryBank *bank = header->Bank;
+
    if (!header->InUse)
    {
       return;
@@ -127,6 +153,8 @@ void FreeMemory(void *address)
    {
       CombineWithNextHeader(header->Previous);
    }
+
+
 }
 void *ReallocateMemory(MemoryBank *bank, void *src, size_t size)
 {
@@ -135,26 +163,6 @@ void *ReallocateMemory(MemoryBank *bank, void *src, size_t size)
    FreeMemory(src);
    return newMem;
 }
-
-void DumpMemoryBank(MemoryBank *bank)
-{
-   printf(":::::START MEMORY DUMP:::::\n");
-   printf("Start: %p, Size: %zu/%zu, Entries: %zu\n", bank->Start, bank->Used, bank->Size, bank->Entries);
-   printf("Entries...\n");
-
-   size_t i = 1;
-   MemoryAllocationHeader *cursor = (MemoryAllocationHeader *)bank->Start;
-   while (cursor != nullptr)
-   {
-      printf("%zu: [%p, S: %zu, Prev: %p, Next: %p, In Use: %d]\n",
-             i++, cursor,
-             cursor->Size, cursor->Previous, cursor->Next, cursor->InUse);
-
-      cursor = cursor->Next;
-   }
-   printf(":::::END MEMORY DUMP:::::\n");
-}
-
 void *GlobalMemoryBankMalloc(size_t size)
 {
    MemoryBank *mb = GetGlobalMemoryBank();
