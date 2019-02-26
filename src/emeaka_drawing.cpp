@@ -3,7 +3,10 @@
 #include "emeaka_intrinsics.h"
 #include "emeaka_platform.h"
 #include "emeaka_vector.h"
+#include "emeaka_drawing.h"
 #include "emeaka_font.cpp"
+
+#include <cstdio>
 
 void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float g, float b)
 {
@@ -20,7 +23,7 @@ void ClearBitmap(GameOffscreenBuffer *offscreenBuffer, float r, float g, float b
    }
 }
 
-void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2i p, float r, float g, float b, float a = 1.0f)
+void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2i p, float r, float g, float b, float a )
 {
    RGBA color;
    color.r = (uint8_t)Round(255.f * r);
@@ -47,7 +50,7 @@ void DrawPixel(GameOffscreenBuffer *offscreenBuffer, vec2i p, float r, float g, 
    }
 }
 
-internal void DrawHorizontalLine(GameOffscreenBuffer *osb, vec2i p0, vec2i p1, float r, float g, float b, float a = 1.0f)
+void DrawHorizontalLine(GameOffscreenBuffer *osb, vec2i p0, vec2i p1, float r, float g, float b, float a)
 {
    int64_t x0 = p0.x, x1 = p1.x;
    if(x1 < x0)
@@ -72,7 +75,7 @@ internal void DrawHorizontalLine(GameOffscreenBuffer *osb, vec2i p0, vec2i p1, f
    }
 }
 
-extern "C" void DrawLine(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b, float a = 1.0f)
+extern "C" void DrawLine(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b, float a)
 {
    bool steep = abs(p1.y - p0.y) > abs(p1.x - p0.x);
    
@@ -139,7 +142,7 @@ extern "C" void DrawLine(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p
    return;
    
 }
-void StrokeCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, float r, float g, float b, float a = 1.0f)
+void StrokeCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, float r, float g, float b, float a)
 {
    int64_t x = -radius, y = 0, err = 2 - 2 * radius;
    do
@@ -156,7 +159,7 @@ void StrokeCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, flo
    
 }
 
-void DrawCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, float r, float g, float b, float a = 1.0f)
+void DrawCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, float r, float g, float b, float a)
 {
    size_t draw = 0;
    int64_t x = -radius, y = 0, err = 2 - 2 * radius;
@@ -182,7 +185,7 @@ void DrawCircle(GameOffscreenBuffer *offscreenBuffer, vec2i p, int radius, float
    DrawHorizontalLine(offscreenBuffer, vec2i(p.x-radius/2,p.y), vec2i(p.x+radius/2,p.y),r,g,b,a); 
 }
 
-extern "C" void DrawChar(GameOffscreenBuffer *offscreenBuffer, vec2i p, char c, float r, float g, float b, float a, bool shadow)
+void DrawChar(GameOffscreenBuffer *offscreenBuffer, vec2i p, char c, float r, float g, float b, float a, bool shadow)
 {
    //wipe it
    if (p.x < -(int64_t)FixedFontWidth || p.x > offscreenBuffer->TextureWidth || p.y < -(int64_t)FixedFontHeight || p.y > offscreenBuffer->TextureHeight)
@@ -275,7 +278,7 @@ void DrawNewText(GameOffscreenBuffer *osb, vec2i p, const FontInformation* font,
 }
 
 
-extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b, float a = 1.0f)
+void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b, float a)
 {
    //not sure why i chose a lambda here...
    auto VecSwap = [](vec2i &e1, vec2i &e2){
@@ -351,13 +354,13 @@ extern "C" void DrawTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec
       DrawHorizontalLine(offscreenBuffer,vec2i(_a,y),vec2i(_b,y),r,g,b,a);
    }
 }
-extern "C" void StrokeTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b, float a = 1.0f)
+void StrokeTriangle(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, vec2i p2, float r, float g, float b, float a)
 {
    DrawLine(offscreenBuffer,p0,p1,r,g,b, a);
    DrawLine(offscreenBuffer,p1,p2,r,g,b, a);
    DrawLine(offscreenBuffer,p2,p0,r,g,b, a);
 }
-extern "C" void DrawRect(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b, float a = 1.0f)
+void DrawRect(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b, float a)
 {
    vec2i p_ur(p1.x, p0.y);
    vec2i p_ll(p0.x, p1.y);
@@ -367,7 +370,7 @@ extern "C" void DrawRect(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p
 
    return;
 }
-extern "C" void StrokeRect(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b,float a= 1.0f)
+void StrokeRect(GameOffscreenBuffer *offscreenBuffer, vec2i p0, vec2i p1, float r, float g, float b,float a)
 {
    vec2i p_ur(p1.x, p0.y);
    vec2i p_ll(p0.x, p1.y);
