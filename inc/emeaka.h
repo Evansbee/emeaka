@@ -6,7 +6,9 @@
 #include "emeaka_vector.h"
 //helper defines
 
+#ifndef EMEAKA_TEST //test framework uses this
 #define internal static
+#endif
 #define local_persist static
 #define global_variable static
 

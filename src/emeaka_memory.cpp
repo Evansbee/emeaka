@@ -21,7 +21,7 @@ void CopyMemory(void *dst, const void *src, size_t bytes)
    memcpy(dst, src, bytes);
 }
 
-void InitialzeMemoryBank(MemoryBank *bank, void *start, size_t size)
+void InitializeMemoryBank(MemoryBank *bank, void *start, size_t size)
 {
    bank->Start = start;
    bank->Size = size;
@@ -41,6 +41,11 @@ void *AllocateMemory(MemoryBank *bank, size_t size)
 {
    //printf("Allocating %zu bytes\n",size);
    //printf("Usage: %zuKB/%zuKB\n",bank->Used/KiloBytes(1), bank->Size/KiloBytes(1));
+   if(size == 0 || bank == nullptr)
+   {
+      return nullptr;
+   }
+
    MemoryAllocationHeader *current = (MemoryAllocationHeader *)bank->Start;
 
    while (current->InUse || current->Size < size)
@@ -107,10 +112,10 @@ void FreeMemory(void *address)
    MemoryAllocationHeader *header = (MemoryAllocationHeader *)((size_t)address - sizeof(MemoryAllocationHeader));
    if (!header->InUse)
    {
-      printf("FREE UNUSED MEMORY\n");
+      return;
    }
-   header->InUse = false;
 
+   header->InUse = false;
    header->Bank->Used -= header->Size;
    //printf("Freeing: %zu bytes\n",header->Size);
    if (header->Next && !header->Next->InUse)

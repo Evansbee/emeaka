@@ -1,4 +1,4 @@
-CXX = clang
+CXX = clang++
 
 DISABLEDWARNINGS =-Wno-unused-variable -Wno-unused-function -Wno-char-subscripts
 
@@ -16,6 +16,9 @@ osx_emeaka:
 
 emeaka_game:
 	$(CXX) $(COMMONCXXFLAGS) $(GAMECXXFLAGS) $(COMMONLDFLAGS) $(GAMELDFLAGS) src/emeaka.cpp -o bin/emeaka_game.dylib
+
+tests:
+	$(CXX) $(COMMONCXXFLAGS) -DEMEAKA_TEST=1 -I src/ test/test_main.cpp -o bin/emeaka_tests
 
 clean:
 	rm -rf bin/*
