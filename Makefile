@@ -17,8 +17,12 @@ osx_emeaka:
 emeaka_game:
 	$(CXX) $(COMMONCXXFLAGS) $(GAMECXXFLAGS) $(COMMONLDFLAGS) $(GAMELDFLAGS) src/emeaka.cpp -o bin/emeaka_game.dylib
 
-tests:
-	$(CXX) $(COMMONCXXFLAGS) -DEMEAKA_TEST=1 -I src/ test/test_main.cpp -o bin/emeaka_tests
+tests: test/test_main.o test/test_memory.cpp
+	$(CXX) $(COMMONCXXFLAGS) -DEMEAKA_TEST=1 -I src/ test/test_main.o test/test_memory.cpp -o bin/emeaka_tests
+
+test/test_main.o: test/test_main.cpp
+	$(CXX) $(COMMONCXXFLAGS) -DEMEAKA_TEST=1 -I src/ test/test_main.cpp -c -o test/test_main.o
+
 
 clean:
-	rm -rf bin/*
+	rm -rf bin/* *.o test/*.o
