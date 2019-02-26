@@ -7,7 +7,8 @@
 #include "emeaka_drawing.cpp"
 #include "emeaka_string.cpp"
 
-#include "Fonts/DejaVuSansMono32ptFont.h"
+#include "Fonts/DejaVuSansMono24ptFont.h"
+#include "Fonts/DejaVuSansMono12ptFont.h"
 
 //stb stuff
 #define STB_IMAGE_IMPLEMENTATION
@@ -223,6 +224,9 @@ void DisplayLog(LogEntry** logHead, GameOffscreenBuffer *buf, vec2i p, float dt)
    //if we're done with an item we have to both free the string and free the log entry
    //printf("Displaying Log - Header = %p\n",*logHead);
    LogEntry *cursor = *logHead;
+
+   const FontInformation* font = (buf->TextureHeight > buf->WindowHeight)?(&DejaVuSansMono24ptFont):(&DejaVuSansMono12ptFont);
+
    while(cursor != nullptr)
    {
       float r = (float)cursor->color.r/255.f;
@@ -239,9 +243,9 @@ void DisplayLog(LogEntry** logHead, GameOffscreenBuffer *buf, vec2i p, float dt)
             cursor->Fading = true;
          }
          
-         DrawNewText(buf,p,&DejaVuSansMono32ptFont,cursor->TextString,r,g,b,a);
+         DrawNewText(buf,p,font,cursor->TextString,r,g,b,a);
          //DrawText(buf,p,cursor->TextString,r,g,b,a,true);
-         p.y += DejaVuSansMono32ptFont.LineStep;
+         p.y += font->LineStep;
          cursor = cursor->Next;
       } 
       else if(cursor->Fading)
@@ -254,8 +258,8 @@ void DisplayLog(LogEntry** logHead, GameOffscreenBuffer *buf, vec2i p, float dt)
             cursor->FadeTimeLeft = 0;
          }
          float alphaScale = cursor->FadeTimeLeft / cursor->FadeTime;
-         DrawNewText(buf,p,&DejaVuSansMono32ptFont,cursor->TextString,r,g,b,a*alphaScale);
-         p.y += DejaVuSansMono32ptFont.LineStep;
+         DrawNewText(buf,p,font,cursor->TextString,r,g,b,a*alphaScale);
+         p.y += font->LineStep;
          cursor = cursor->Next;
       }
       else
@@ -397,7 +401,8 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
    StrokeCircle(offscreenBuffer,right,150,1.f,1.f,1.f);
    char memorydiag[256];
    snprintf(memorydiag,256,"Used: %zuKB/%zuKB, Entries: %zu",gameState->WorldMemoryBank.Used/KiloBytes(1),gameState->WorldMemoryBank.Size/KiloBytes(1), gameState->WorldMemoryBank.Entries);
-   DrawNewText(offscreenBuffer,vec2i(50,offscreenBuffer->TextureHeight-50), &DejaVuSansMono32ptFont,memorydiag,1,1,1,1);
+   const FontInformation* font = (offscreenBuffer->TextureHeight > offscreenBuffer->WindowHeight)?(&DejaVuSansMono24ptFont):(&DejaVuSansMono12ptFont);
+   DrawNewText(offscreenBuffer,vec2i(50,offscreenBuffer->TextureHeight-50), font,memorydiag,1,1,1,1);
    //DrawTriangle(offscreenBuffer,left,right,center,0,0,1.f);
    //StrokeTriangle(offscreenBuffer,left,right,center,1.f,1.f,1.f);
    DisplayLog(&gameState->Logger,offscreenBuffer,vec2i(10,10),gameClocks->UpdateDT);
