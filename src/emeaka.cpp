@@ -22,31 +22,6 @@
 #include "stb_image.h"
 
 
-
-void TestMemoryAllocation(void * start, size_t maxsize)
-{
-   MemoryBank testBank;
-   InitializeMemoryBank(&testBank, start, 1000);
-   DumpMemoryBank(&testBank);
-   void *test1 = AllocateMemory(&testBank,100);
-   void *test2 = AllocateMemory(&testBank,100);
-   void *test3 = AllocateMemory(&testBank,100);
-   void *test4 = AllocateMemory(&testBank,100);
-   void *test5 = AllocateMemory(&testBank,100);
-   void *test6 = AllocateMemory(&testBank,100);
-   void *test7 = AllocateMemory(&testBank,100);
-
-   FreeMemory(test1);
-
-   FreeMemory(test3);
-
-   FreeMemory(test2);
- 
-   void *test10 = AllocateMemory(&testBank, 55);
-   DumpMemoryBank(&testBank);
-}
-
-
 //bool true if position changed.
 bool OffsetAndNormalizePosition(GameWorld *world, Position *pos, vec2f deltaP)
 {
@@ -344,7 +319,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       color.a = 255;
       float run = (rand() % 5);
       float fade =rand() % 5;
-      AddToLog(&gameState->Logger,&gameState->WorldMemoryBank,"[NOTICE] M Key Pressed;", color, run, fade);
+      AddToLog(&gameState->Logger,&gameState->WorldMemoryBank,"[NOTICE] M Key Pressed", color, run, fade);
    }
    if(inputBuffer->KeyboardInput.Key[KeyCode::D].IsDown && inputBuffer->KeyboardInput.Key[KeyCode::D].HalfTransitions > 0)
    {
