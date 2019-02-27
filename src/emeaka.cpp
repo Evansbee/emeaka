@@ -1,13 +1,14 @@
 #include "emeaka.h"
 #include "emeaka_intrinsics.h"
 #include "emeaka_drawing.h"
-
-
+#include "emeaka_random.h"
+#include "emeaka_memory.h"
+#include "emeaka_string.h"
 #include <cstdio>
 
-#include "emeaka_random.cpp"
-#include "emeaka_memory.cpp"
-#include "emeaka_string.cpp"
+
+
+
 
 #include "Fonts/DejaVuSansMono24ptFont.h"
 #include "Fonts/DejaVuSansMono12ptFont.h"

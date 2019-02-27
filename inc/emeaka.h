@@ -4,6 +4,7 @@
 
 #include "emeaka_platform.h"
 #include "emeaka_vector.h"
+#include "emeaka_memory.h"
 //helper defines
 
 #ifndef EMEAKA_TEST //test framework uses this
@@ -92,34 +93,6 @@ struct GameWorld
    
 };
 
-struct MemoryBank;
-
-struct MemoryAllocationHeader
-{
-  size_t Size;
-  bool InUse;
-  MemoryAllocationHeader *Previous; //points to the header
-  MemoryAllocationHeader *Next; //points to the header
-  MemoryBank *Bank; 
-};
-
-struct MemoryBank
-{
-  void *Start; //start of the bank
-  size_t Size;
-  size_t Entries;
-  size_t Used; //will inlude the header space
-  MemoryAllocationHeader *NextFree; //Points to the first byte of header of Freespace at end
-};
-
-struct MemoryArena
-{
-  void *Start;
-  size_t Size;
-  size_t Used;
-};
-
-
 
 
 struct GameControl 
@@ -156,12 +129,11 @@ struct FontInformation
 };
 
 struct LogEntry;
+
 struct GameState
 {
-  Position PlayerPos;
-  
+  Position PlayerPos;  
   MemoryBank WorldMemoryBank;
-
   GameWorld *World;
   float ToneHz;
   float tSin;

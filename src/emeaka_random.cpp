@@ -1,4 +1,5 @@
 #include "emeaka.h"
+#include "emeaka_random.h"
 #include "emeaka_intrinsics.h"
 #include "emeaka_platform.h"
 #include "emeaka_vector.h"
