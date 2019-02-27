@@ -155,7 +155,7 @@ int main(int argc, char **argv)
         FT_Done_Glyph(glyph);
     }
 
-    fprintf(outputFile, "#pragma once\n\n#include \"emeaka.h\"\n#include <cinttypes>\n\n\n\n");
+    fprintf(outputFile, "#pragma once\n\n#include \"emeaka.h\"\n#include <cstdint>\n\n\n\n");
     fprintf(outputFile, "static const uint8_t %s%dptBitmaps[] = {\n   ", fontName, s);
     int cnt = 0;
     for (auto d : RenderBuffer)

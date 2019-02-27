@@ -1,9 +1,11 @@
+#include <cstdint>
 
 #include "emeaka.h"
 #include "emeaka_intrinsics.h"
 #include "emeaka_platform.h"
 #include "emeaka_vector.h"
 #include "emeaka_drawing.h"
+#include "emeaka_color.h"
 
 #include "Fonts/Proggy16ptFont.h"
 #include "Fonts/Proggy32ptFont.h"

@@ -22,8 +22,8 @@ struct Color
         uint8_t _g = Round(g*255.f);
         uint8_t _b = Round(b*255.f);
         uint8_t _a = Round(a*255.f);
-        return RGBA_TO_UINT32(_r,_g,_b,_a_);
+        return RGBA_TO_UINT32(_r,_g,_b,_a);
     }
 };
 
-struct Color
+

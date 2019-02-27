@@ -1,7 +1,10 @@
 #pragma once
 
 #include <cmath>
+#include <numeric>
 //#include <intrin.h>
+
+
 
 inline float Sqrt(float in)
 {
@@ -46,4 +49,9 @@ inline float Cos(float angle)
 inline float ATan2(float x, float y)
 {
    return atan2f(x,y);
+}
+
+inline bool Equal(float a, float b, float epsilons = 100)
+{
+   return Abs(a-b) < std::numeric_limits<float>::epsilon() * epsilons;
 }

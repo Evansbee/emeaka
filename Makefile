@@ -10,16 +10,23 @@ PLATFORMCXXFLAGS =`sdl2-config --cflags`
 PLATFORMLDFLAGS =`sdl2-config --static-libs`
 COMMONCXXFLAGS =-I inc/ -Wall -Werror -g -std=c++11 -DEMEAKA_INTERNAL=1 -DEMEAKA_SLOW=1 -DEMEAKA_DEBUG=1 $(DISABLEDWARNINGS)
 COMMONLDFLAGS =
-
+FONTCXXFLAGS = -std=c++11 -Wno-backslash-newline-escape `freetype-config --cflags --libs` 
 PLATFORMFILES = $(wildcard src/engine/osx*.cpp)
 PLATFORMOBJS = $(patsubst src%,tmp%,$(PLATFORMFILES:.cpp=.o))
 GAMEFILES = $(wildcard src/game/emeaka*.cpp)
 GAMEOBJS = $(patsubst src%,tmp%,$(GAMEFILES:.cpp=.o))
 TESTFILES = $(wildcard test/*.cpp)
 TESTOBJS = $(patsubst test%,tmp/test%,$(TESTFILES:.cpp=.o))
+RTFILES = $(wildcard src/rt/*.cpp)
+RTOBJS = $(patsubst src%,tmp%,$(RTFILES:.cpp=.o))
 
 
-all:	directories osx_emeaka emeaka_game
+
+all:	directories osx_emeaka emeaka_game fontmaker
+
+fontmaker: fontmaker/main.cpp
+	@echo Building $@...
+	@$(CXX) $(FONTCXXFLAGS) fontmaker/main.cpp -o bin/fontmaker
 
 osx_emeaka:	$(PLATFORMOBJS)
 	@echo Linking $@...
@@ -30,23 +37,27 @@ emeaka_game: $(GAMEOBJS)
 	@$(CXX) $(COMMONLDFLAGS) $(GAMELDFLAGS) $(GAMEOBJS) -o bin/emeaka_game.dylib
 
 tmp/engine/%.o: src/engine/%.cpp
-	@echo Compiling $@
+	@echo $< \-\> $@...
 	@$(CXX) $(COMMONCXXFLAGS) $(PLATFORMCXXFLAGS) -c -o  $@ $<
 
 tmp/game/%.o: src/game/%.cpp
-	@echo Compiling $@
+	@echo $< \-\> $@...
 	@$(CXX) $(COMMONCXXFLAGS) $(GAMECXXFLAGS) -c -o  $@ $<
 
-tests: $(TESTOBJS)
+tmp/rt/%.o: src/rt/%.cpp
+	@echo $< \-\> $@...
+	@$(CXX) $(COMMONCXXFLAGS) -c -o  $@ $<
+
+tests: directories $(TESTOBJS) $(GAMEOBJS) $(RTOBJS)
 	@echo Linking $@...
-	@$(CXX) $(TESTLDFLAGS) $(COMMONLDFLAGS) $(TESTOBJS) -o bin/emeaka_tests
+	@$(CXX) $(TESTLDFLAGS) $(COMMONLDFLAGS) $(TESTOBJS) $(GAMEOBJS) $(RTOBJS) -o bin/emeaka_tests
 
 tmp/test/%.o: test/%.cpp
-	@echo Compiling $@
+	@echo $< \-\> $@...
 	@$(CXX) $(COMMONCXXFLAGS) $(TESTCXXFLAGS) -c -o  $@ $<
 
 directories: 
-	@mkdir -p tmp/engine tmp/game tmp/test
+	@mkdir -p tmp/engine tmp/game tmp/test tmp/rt
 	@mkdir -p bin
 
 clean:

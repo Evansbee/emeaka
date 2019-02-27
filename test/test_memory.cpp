@@ -1,6 +1,6 @@
 #include "emeaka.h"
 #include "catch.hpp"
-#include "emeaka_memory.cpp"
+#include "emeaka_memory.h"
 
 bool CheckValid(MemoryBank *bank)
 {

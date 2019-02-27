@@ -1,5 +1,5 @@
 #pragma once
-#include <cinttypes>
+#include <cstdint>
 #include <cstdlib>
 
 #include "emeaka_platform.h"
@@ -17,9 +17,6 @@
 
 #define PI32 3.14159265359f
 
-//Macros
-#define RGB_TO_UINT32(r, g, b) (((uint8_t)(r) << 16) | ((uint8_t)(g) << 8) | (uint8_t)(b))
-#define RGBA_TO_UINT32(a, r, g, b) (((uint8_t)(a) <<24 ) | ((uint8_t)(r) << 16) | ((uint8_t)(g) << 8) | (uint8_t)(b))
 
 struct RGBA
 {
