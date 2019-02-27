@@ -53,10 +53,11 @@ int main(int argc, char **argv)
     if(argc==5)
     {
         bitcount = atoi(argv[4]);
-        if(bitcount != 1 || bitcount != 8)
+        if(bitcount != 1 && bitcount != 8)
         {
             bitcount = 1;
         }
+        fprintf(stderr,"Bitcount: %d\n",bitcount);
     }
 
     int err;
