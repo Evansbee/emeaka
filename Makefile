@@ -2,6 +2,8 @@ CXX = clang++
 
 DISABLEDWARNINGS =-Wno-unused-variable -Wno-unused-function -Wno-char-subscripts
 
+TESTCXXFLAGS = -DEMEAKA_TEST=1 -I src/game/ -I src/engine/
+TESTLDFLAGS =
 GAMECXXFLAGS =
 GAMELDFLAGS =-dynamiclib
 PLATFORMCXXFLAGS =`sdl2-config --cflags`
@@ -14,31 +16,38 @@ PLATFORMOBJS = $(patsubst src%,tmp%,$(PLATFORMFILES:.cpp=.o))
 GAMEFILES = $(wildcard src/game/emeaka*.cpp)
 GAMEOBJS = $(patsubst src%,tmp%,$(GAMEFILES:.cpp=.o))
 TESTFILES = $(wildcard test/*.cpp)
-TESTOBJS = $(patsubst test%,tmp/test/%,$(TESTFILES:.cpp=.o))
+TESTOBJS = $(patsubst test%,tmp/test%,$(TESTFILES:.cpp=.o))
+
 
 all:	directories osx_emeaka emeaka_game
 
 osx_emeaka:	$(PLATFORMOBJS)
-	$(CXX) $(COMMONCXXFLAGS) $(PLATFORMCXXFLAGS) $(PLATFORMLDFLAGS) $(COMMONLDFLAGS) $(PLATFORMOBJS) -o bin/emeaka
+	@echo Linking $@...
+	@$(CXX) $(PLATFORMLDFLAGS) $(COMMONLDFLAGS) $(PLATFORMOBJS) -o bin/emeaka
 
 emeaka_game: $(GAMEOBJS)
-	$(CXX) $(COMMONCXXFLAGS) $(GAMECXXFLAGS) $(COMMONLDFLAGS) $(GAMELDFLAGS) $(GAMEOBJS) -o bin/emeaka_game.dylib
+	@echo Linking $@...
+	@$(CXX) $(COMMONLDFLAGS) $(GAMELDFLAGS) $(GAMEOBJS) -o bin/emeaka_game.dylib
 
 tmp/engine/%.o: src/engine/%.cpp
-	$(CXX) $(COMMONCXXFLAGS) $(PLATFORMCXXFLAGS) -c -o  $@ $<
+	@echo Compiling $@
+	@$(CXX) $(COMMONCXXFLAGS) $(PLATFORMCXXFLAGS) -c -o  $@ $<
 
 tmp/game/%.o: src/game/%.cpp
-	$(CXX) $(COMMONCXXFLAGS) $(GAMECXXFLAGS) -c -o  $@ $<
+	@echo Compiling $@
+	@$(CXX) $(COMMONCXXFLAGS) $(GAMECXXFLAGS) -c -o  $@ $<
 
-tests: test/test_main.o test/test_memory.cpp
-	$(CXX) $(COMMONCXXFLAGS) -DEMEAKA_TEST=1 -I src/ test/test_main.o test/test_memory.cpp -o bin/emeaka_tests
+tests: $(TESTOBJS)
+	@echo Linking $@...
+	@$(CXX) $(TESTLDFLAGS) $(COMMONLDFLAGS) $(TESTOBJS) -o bin/emeaka_tests
 
-test/test_main.o: test/test_main.cpp
-	$(CXX) $(COMMONCXXFLAGS) -DEMEAKA_TEST=1 -I src/ test/test_main.cpp -c -o test/test_main.o
+tmp/test/%.o: test/%.cpp
+	@echo Compiling $@
+	@$(CXX) $(COMMONCXXFLAGS) $(TESTCXXFLAGS) -c -o  $@ $<
 
 directories: 
 	@mkdir -p tmp/engine tmp/game tmp/test
 	@mkdir -p bin
-	
+
 clean:
-	rm -rf bin/ tmp/
+	@rm -rf bin/ tmp/
