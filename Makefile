@@ -9,9 +9,9 @@ PLATFORMLDFLAGS =`sdl2-config --static-libs`
 COMMONCXXFLAGS =-I inc/ -Wall -Werror -g -std=c++11 -DEMEAKA_INTERNAL=1 -DEMEAKA_SLOW=1 -DEMEAKA_DEBUG=1 $(DISABLEDWARNINGS)
 COMMONLDFLAGS =
 
-PLATFORMFILES = src/osx_emeaka.cpp
-GAMEFILES = $(wildcard src/emeaka*.cpp)
-GAMEOBJS = $(patsubst src%,tmp%,$(GAMEFILES:.cpp=.o))
+PLATFORMFILES = src/engine/osx_emeaka.cpp
+GAMEFILES = $(wildcard src/game/emeaka*.cpp)
+GAMEOBJS = $(patsubst src/game%,tmp%,$(GAMEFILES:.cpp=.o))
 all:	osx_emeaka emeaka_game
 
 osx_emeaka:	
@@ -28,4 +28,4 @@ test/test_main.o: test/test_main.cpp
 
 
 clean:
-	rm -rf bin/* *.o test/*.o
+	rm -rf bin/* *.o test/*.o tmp/*
