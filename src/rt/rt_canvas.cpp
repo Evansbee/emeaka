@@ -7,6 +7,12 @@
 
 #include "rt_canvas.h"
 
+std::ostream& operator<<(std::ostream& os, const Color& c)
+{
+    os << "(r:"<<c.r<<", g:"<<c.g<<", b:"<<c.b<<")";
+    return os;
+}
+
 Canvas::Canvas(int width, int height) : Width(width), Height(height)
 {
     Buffer = (Color *)malloc(sizeof(Color) * Width * Height);

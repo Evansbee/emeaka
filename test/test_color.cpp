@@ -9,9 +9,30 @@ TEST_CASE("Test color construction","[color]")
     REQUIRE(c.b == 0.25f);
 }
 
-TEST_CASE("WTF","[color]")
+TEST_CASE("Test color addition", "[color]")
 {
-    Canvas c(640,480);
-    c.Write(10,10, Color(1.f,0,1.f)); 
-    c.SaveHDR("tmp/HDROutputTest.hdr");
+    Color c1(1,2,3);
+    Color c2(3,4,5);
+    REQUIRE((c1+c2)==Color(4,6,8));
+}
+
+TEST_CASE("Test color subtraction", "[color]")
+{
+    Color c1(1,2,3);
+    Color c2(3,4,5);
+    REQUIRE((c1-c2)==Color(-2,-2,-2));
+}
+
+TEST_CASE("Test color multiplication (2 colors)", "[color]")
+{
+    Color c1(1,2,3);
+    Color c2(3,4,5);
+    REQUIRE((c1*c2)==Color(3,8,15));
+}
+
+TEST_CASE("Test color multiplication (color * scalar)", "[color]")
+{
+    Color c1(1,2,3);
+    REQUIRE((c1 * 5)==Color(5,10,15));
+    REQUIRE((5 * c1)==Color(5,10,15));
 }
