@@ -9,9 +9,9 @@ struct Matrix
 {
     Matrix()
     {
-        for(auto y = 0; y < M; ++y)
+        for (auto y = 0; y < M; ++y)
         {
-            for(auto x = 0; x < N; ++x)
+            for (auto x = 0; x < N; ++x)
             {
                 d[x][y] = 0;
             }
@@ -19,47 +19,71 @@ struct Matrix
     }
     struct MatrixRow
     {
-        float& operator [](size_t col)
+        float &operator[](size_t col)
         {
             return row[col];
         }
         float *row;
     };
 
-    MatrixRow& operator [](size_t row)
+    template <size_t X, size_t Y>
+    bool operator==(const Matrix<X, Y> &other) const
+    {
+        if (X == N && Y == M)
+        {
+            for (auto y = 0; y < M; ++y)
+            {
+                for (auto x = 0; x < N; ++x)
+                {
+                    if (d[x][y] != other.d[x][y])
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+
+
+    MatrixRow &operator[](size_t row)
     {
         mr.row = (float *)&d[row];
         return mr;
     }
     float d[N][M];
 
+    //all templates are my friend -- which seems to fix it....
     template <size_t X, size_t Y>
-    friend std::ostream& operator <<(std::ostream& os, Matrix<X,Y>& m);
-    private:
+    friend std::ostream &operator<<(std::ostream &os, Matrix<X, Y> &m);
+
+  private:
     MatrixRow mr;
 };
 
 template <size_t N, size_t M = N>
-std::ostream& operator <<(std::ostream& os, Matrix<N,M>& m)
+std::ostream &operator<<(std::ostream &os, Matrix<N, M> &m)
 {
-    os<<"[";
-    for(size_t row = 0; row < N; ++row)
+    os << "[";
+    for (size_t row = 0; row < N; ++row)
     {
-        os<<"[";
-        for(size_t col = 0; col < M; ++col)
+        os << "[";
+        for (size_t col = 0; col < M; ++col)
         {
-            os<<m[row][col];
-            if(col < M-1)
+            os << m[row][col];
+            if (col < M - 1)
             {
-                os<<", ";
+                os << ", ";
             }
         }
-        os<<"]";
-        if(row < N - 1)
+        os << "]";
+        if (row < N - 1)
         {
-            os<<",";
+            os << ",";
         }
     }
-    os<<"]";
+    os << "]";
     return os;
 }
