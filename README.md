@@ -10,7 +10,6 @@ Todo:
 add memory 
 - AllocateMemoryFast -> always just grabs the last item without the search?
 
-more fonts? actual font rendering?
 
 
 organization
@@ -18,10 +17,8 @@ camera concept, entities concept
 -perspective?
 obj importer?
 
-Allocators don't work for STB & file creation <- this is a big deal
 
 File API might want to look like:
-
 
 
 struct FileInformation
