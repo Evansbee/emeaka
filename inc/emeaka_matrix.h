@@ -23,7 +23,7 @@ struct Matrix
         {
             for (auto x = 0; x < N; ++x)
             {
-                d[x][y] = other.d[x][y]
+                d[x][y] = other.d[x][y];
             }
         }
     }
@@ -41,6 +41,11 @@ struct Matrix
             }
         }
         return true;
+    }
+
+    bool operator!=(const Matrix &other) const
+    {
+        return !(*this==other);
     }
 
     const float *operator[](size_t row) const
