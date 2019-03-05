@@ -1,9 +1,9 @@
 #pragma once
 
 #include <cstdlib>
-#include <iostream>
+#include <initializer_list>
 
-//always 4x4
+#include "emeaka_tuple.h"
 
 template <size_t N>
 struct Matrix
@@ -11,13 +11,32 @@ struct Matrix
     Matrix()
     {
         memset(*d, 0, N * N * sizeof(float));
-        for(size_t i = 0; i < N; ++i)
+        for (size_t i = 0; i < N; ++i)
         {
             d[i][i] = 1.f;
         }
     }
 
-    Matrix &operator =(const Matrix& other)
+    Matrix(std::initializer_list<float> v)
+    {
+        if (v.size() != N * N)
+        {
+            for (size_t i = 0; i < N; ++i)
+            {
+                d[i][i] = 1.f;
+            }
+        }
+        else
+        {
+            size_t i = 0;
+            for (auto &item : v)
+            {
+                ((float *)d)[i++] = item;
+            }
+        }
+    }
+
+    Matrix &operator=(const Matrix &other)
     {
         for (auto y = 0; y < N; ++y)
         {
@@ -43,9 +62,51 @@ struct Matrix
         return true;
     }
 
+    Tuple operator*(const Tuple &other) const
+    {
+        static_assert(N == 4,"Matrix * Tuple multiplication only defined for 4x4 matrixes");
+        Tuple result;
+        for (size_t row = 0; row < N; ++row)
+        {
+
+            float value = 0;
+            for (size_t i = 0; i < N; ++i)
+            {
+                value += d[row][i] * other.d[i];
+            }
+            result.d[row] = value;
+        }
+        return result;
+    }
+
+    Matrix operator*(const Matrix &other) const
+    {
+        Matrix result;
+        for (size_t row = 0; row < N; ++row)
+        {
+            for (size_t col = 0; col < N; ++col)
+            {
+                float value = 0;
+                for (size_t i = 0; i < N; ++i)
+                {
+                    value += d[row][i] * other[i][col];
+                }
+                result[row][col] = value;
+            }
+        }
+        return result;
+    }
+
+    void Transpose()
+    {
+
+    }
+
+    Matrix Transposed()
+
     bool operator!=(const Matrix &other) const
     {
-        return !(*this==other);
+        return !(*this == other);
     }
 
     const float *operator[](size_t row) const

@@ -10,6 +10,7 @@ Todo:
 add memory 
 - AllocateMemoryFast -> always just grabs the last item without the search?
 
+more fonts? actual font rendering?
 
 
 organization
@@ -17,8 +18,10 @@ camera concept, entities concept
 -perspective?
 obj importer?
 
+Allocators don't work for STB & file creation <- this is a big deal
 
 File API might want to look like:
+
 
 
 struct FileInformation
@@ -44,24 +47,4 @@ if(info.Found)
 }
 
 the platform needs to find a path to the resource directory as well
-
-How do we want to handle globals? We need a "global" memory bank that everything can use so we can pass around a "Malloc" to various things...what if we want to use std::vector<something, myMalloc()>
-
-void SetGlobalMemoryBank(MemoryBank *mb)
-{
-
-}
-
-//what if we serviced some of these globals every frame?
-
-void* EmeakaMalloc(size_t requestedSize)
-{
-    MemoryBank *mb = GetGlobalMemoryBank(MemoryBank *mb);
-    return AllocateMemory(mb, requestedSize);
-}
-
-void EmeakaFree(void* ptr)
-{
-    FreeMemory(ptr);
-}
 

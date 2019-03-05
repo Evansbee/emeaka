@@ -1,5 +1,6 @@
 #include "catch.hpp"
 #include "emeaka_matrix.h"
+#include "emeaka_tuple.h"
 #include <iostream>
 
 TEST_CASE("Matrix wtf","[matrix]")
@@ -84,10 +85,51 @@ TEST_CASE("Matrix can be equal/notEqual","[matrix]")
 {
     Matrix4f m1;
     Matrix4f m2;
-
+  
     m1[0][2] = 4.3;
     m2[0][2] = 4.3;
 
     REQUIRE(m1 == m2);
+
+    m1[1][2] = 5.1;
+    REQUIRE(m1!=m2);
 }
 
+TEST_CASE("Matrix Can Be Initialized With Initializer List","[matrix]")
+{
+    Matrix4f m1({1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16});
+    REQUIRE(m1[0][0] == 1);
+    REQUIRE(m1[3][3] == 16);
+    REQUIRE(m1[0][1] == 2);
+    REQUIRE(m1[1][0] == 5);
+    std::cout<<m1<<std::endl;
+}
+
+TEST_CASE("Matrix Multiplication works","[matrix]")
+{
+    Matrix4f a({1,2,3,4,5,6,7,8,9,8,7,6,5,4,3,2});
+    Matrix4f b({-2,1,2,3,3,2,1,-1,4,3,6,5,1,2,7,8});
+    Matrix4f identity;
+    Matrix4f axb({20,22,50,48,44,54,114,108,40,58,110,102,16,26,46,42});
+    REQUIRE(a*b == axb);
+    REQUIRE(axb * identity == axb);
+}
+
+TEST_CASE("Matrix Tuple mutliplication works","[matrix][tuple]")
+{
+    Matrix4f A({1,2,3,4,2,4,4,2,8,6,4,1,0,0,0,1});
+    Tuple b(1,2,3,1);
+    Matrix4f identity;
+    Tuple c(18,24,33,1);
+    REQUIRE(A*b == c);
+    REQUIRE(identity * c == c);
+}
+
+TEST_CASE("Matrix transposition","[matrix")
+{
+    Matrix4f A({0,9,3,0,9,8,0,8,1,8,5,3,0,0,5,8});
+    Matrix4f B({0,9,1,0,9,8,8,0,3,0,5,5,0,8,3,8});
+    REQUIRE(A.Transposed() == B);
+    A.Transpose();
+    REQUIRE(A==B);
+}

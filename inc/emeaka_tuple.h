@@ -5,13 +5,19 @@
 
 struct Tuple
 {
+    Tuple():Tuple(0,0,0,0){}
     Tuple(float _x, float _y, float _z, float _w) :
         x(_x),
         y(_y),
         z(_z),
         w(_w)
         {}
-    float x, y, z, w;
+    
+    union{
+    struct { float x, y, z, w; };
+    struct { float r,g,b,a; };
+    float d[4];
+    };
 
     bool IsPoint() const { return w == 1.0f; }
     bool IsVector() const { return w == 0.0f; }
