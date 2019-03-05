@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <cstdio>
 #include <initializer_list>
 
 #include "emeaka_tuple.h"
@@ -99,10 +100,50 @@ struct Matrix
 
     void Transpose()
     {
-
+        for (size_t row = 0; row < (N/2); ++row)
+        {
+            for (size_t col = 0; col < (N/2); ++col)
+            {
+                float temp = d[row][col];
+                d[row][col] = d[row][col];
+                d[col][row] = temp;
+            }
+        }
     }
 
-    Matrix Transposed()
+    Matrix Transposed(){
+        Matrix nm(*this);
+        nm.Transpose();
+        return nm;
+    }
+
+    float Determinant() const
+    {
+        static_assert(N==2, "Only supporting 2x2 determinant");
+        return d[0][0] * d[1][1] - d[0][1] * d[1][0];
+    }
+
+    Matrix<N-1> SubMatrix(size_t row, size_t col) const
+    {
+        Matrix<N-1> s;
+        
+        for (size_t r = 0; r < (N); ++r)
+        {
+            if(r != row)
+            {
+                for (size_t c = 0; c < (N); ++c)
+                {
+                    if(c != col)
+                    {   
+                        size_t wr = (r>row)?(r-1):r; 
+                        size_t wc = (c>col)?(c-1):c;
+                        s[wr][wc] = d[r][c];
+                    }
+                }
+            }
+        }
+        return s;
+    }
 
     bool operator!=(const Matrix &other) const
     {

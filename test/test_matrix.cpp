@@ -133,3 +133,23 @@ TEST_CASE("Matrix transposition","[matrix")
     A.Transpose();
     REQUIRE(A==B);
 }
+
+TEST_CASE("Can calculate the determinant","[matrix]")
+{
+    Matrix2f A({1,5,-3,2});
+    REQUIRE(A.Determinant() == 17);
+}
+
+TEST_CASE("Submatrix Works","[matrix]")
+{
+    Matrix3f x({1,2,3,  4,5,6,   7,8,9});
+    Matrix2f y = x.SubMatrix(0,0);
+    Matrix2f result({5,6,8,9});
+    REQUIRE(y==result);
+
+
+    Matrix4f A({-6,1,1,6, -8,5,8,6,-1,0,8,2,-7,1,-1,1});
+    Matrix3f S(A.SubMatrix(2,1));
+    Matrix3f R({-6,1,6,-8,8,6,-7,-1,1});
+    REQUIRE(S==R);
+}
