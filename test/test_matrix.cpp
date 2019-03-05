@@ -153,3 +153,20 @@ TEST_CASE("Submatrix Works","[matrix]")
     Matrix3f R({-6,1,6,-8,8,6,-7,-1,1});
     REQUIRE(S==R);
 }
+
+TEST_CASE("Calculate a minor of a 3x3","[matrix]")
+{
+    Matrix3f A({3,5,0,2,-1,-7,6,-1,5});
+    Matrix2f B(A.SubMatrix(1,0));
+    REQUIRE(B.Determinant() == 25);
+    REQUIRE(A.Minor(1,0) == 25);
+}
+
+TEST_CASE("Cofactors of 3x3","[matrix]")
+{
+    Matrix3f A({3,5,0,2,-1,-7,6,-1,5});
+    REQUIRE(A.Minor(0,0)==-12);
+    REQUIRE(A.Cofactor(0,0)==-12);
+    REQUIRE(A.Minor(1,0)==25);
+    REQUIRE(A.Cofactor(1,0)==-25);
+}

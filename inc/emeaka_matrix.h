@@ -145,6 +145,18 @@ struct Matrix
         return s;
     }
 
+    float Minor(size_t row, size_t col)
+    {
+        return SubMatrix(row,col).Determinant();
+    }
+
+    float Cofactor(size_t row, size_t col)
+    {
+        float minor = Minor(row,col);
+        float factor = (((row+col) % 2) == 0)?1:-1;
+        return minor * factor;
+    }
+
     bool operator!=(const Matrix &other) const
     {
         return !(*this == other);
