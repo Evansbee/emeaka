@@ -37,7 +37,7 @@ struct Matrix
         }
     }
 
-    Matrix &operator=(const Matrix &other)
+    Matrix& operator=(const Matrix &other)
     {
         for (auto y = 0; y < N; ++y)
         {
@@ -46,6 +46,7 @@ struct Matrix
                 d[x][y] = other.d[x][y];
             }
         }
+        return *this;
     }
 
     bool operator==(const Matrix &other) const
@@ -65,7 +66,7 @@ struct Matrix
 
     Tuple operator*(const Tuple &other) const
     {
-        static_assert(N == 4,"Matrix * Tuple multiplication only defined for 4x4 matrixes");
+        static_assert(N == 4, "Matrix * Tuple multiplication only defined for 4x4 matrixes");
         Tuple result;
         for (size_t row = 0; row < N; ++row)
         {
@@ -100,9 +101,9 @@ struct Matrix
 
     void Transpose()
     {
-        for (size_t row = 0; row < (N/2); ++row)
+        for (size_t row = 0; row < (N / 2); ++row)
         {
-            for (size_t col = 0; col < (N/2); ++col)
+            for (size_t col = 0; col < (N / 2); ++col)
             {
                 float temp = d[row][col];
                 d[row][col] = d[row][col];
@@ -111,7 +112,8 @@ struct Matrix
         }
     }
 
-    Matrix Transposed(){
+    Matrix Transposed()
+    {
         Matrix nm(*this);
         nm.Transpose();
         return nm;
@@ -119,24 +121,52 @@ struct Matrix
 
     float Determinant() const
     {
-        static_assert(N==2, "Only supporting 2x2 determinant");
-        return d[0][0] * d[1][1] - d[0][1] * d[1][0];
+        float det = 0;
+        for (size_t col = 0; col < N ; ++col)
+        {
+            det += d[0][col] * Cofactor(0, col);
+        }
+        return det;
+    }
+
+    bool IsInvertable() const
+    {
+        return Determinant() != 0;
+    }
+
+    void Invert()
+    {
+        *this = Inverted();
+    }
+
+    Matrix Inverted() const
+    {
+        Matrix m2;
+        float det = Determinant();
+        for(size_t row = 0; row < N; ++row)
+        {
+            for(size_t col = 0; col < N; ++col)
+            {
+                m2[col][row] = Cofactor(row,col) / det;
+            }
+        }
+        return m2;
     }
 
     Matrix<N-1> SubMatrix(size_t row, size_t col) const
     {
-        Matrix<N-1> s;
-        
+        Matrix<N - 1> s;
+
         for (size_t r = 0; r < (N); ++r)
         {
-            if(r != row)
+            if (r != row)
             {
                 for (size_t c = 0; c < (N); ++c)
                 {
-                    if(c != col)
-                    {   
-                        size_t wr = (r>row)?(r-1):r; 
-                        size_t wc = (c>col)?(c-1):c;
+                    if (c != col)
+                    {
+                        size_t wr = (r > row) ? (r - 1) : r;
+                        size_t wc = (c > col) ? (c - 1) : c;
                         s[wr][wc] = d[r][c];
                     }
                 }
@@ -145,15 +175,15 @@ struct Matrix
         return s;
     }
 
-    float Minor(size_t row, size_t col)
+    float Minor(size_t row, size_t col) const
     {
-        return SubMatrix(row,col).Determinant();
+        return SubMatrix(row, col).Determinant();
     }
 
-    float Cofactor(size_t row, size_t col)
+    float Cofactor(size_t row, size_t col) const
     {
-        float minor = Minor(row,col);
-        float factor = (((row+col) % 2) == 0)?1:-1;
+        float minor = Minor(row, col);
+        float factor = (((row + col) % 2) == 0) ? 1 : -1;
         return minor * factor;
     }
 
@@ -206,3 +236,7 @@ std::ostream &operator<<(std::ostream &os, const Matrix<X> &m)
     os << "]";
     return os;
 }
+
+template <>
+float Matrix<2>::Determinant() const;
+

@@ -170,3 +170,48 @@ TEST_CASE("Cofactors of 3x3","[matrix]")
     REQUIRE(A.Minor(1,0)==25);
     REQUIRE(A.Cofactor(1,0)==-25);
 }
+
+TEST_CASE("Determinante of 3x3 matrix","[matrix]")
+{
+    Matrix3f A({1,2,6,-5,8,-4,2,6,4});
+    REQUIRE(A.Cofactor(0,0)==56);
+    REQUIRE(A.Cofactor(0,1)==12);
+    REQUIRE(A.Cofactor(0,2)==-46);
+    REQUIRE(A.Determinant()==-196);
+}
+
+TEST_CASE("Determinante of 4x4 matrix","[matrix]")
+{
+    Matrix4f A({-2,-8,3,5,-3,1,7,3,1,2,-9,6,-6,7,7,-9});
+    REQUIRE(A.Cofactor(0,0)==690);
+    REQUIRE(A.Cofactor(0,1)==447);
+    REQUIRE(A.Cofactor(0,2)==210);
+    REQUIRE(A.Cofactor(0,3)==51);
+    REQUIRE(A.Determinant()==-4071);
+}
+
+TEST_CASE("Determine invertability","[matrix]")
+{
+    Matrix4f A({6,4,4,4,5,5,7,6,4,-9,3,-7,9,1,7,-6});
+    REQUIRE(A.Determinant() == -2120);
+    REQUIRE(A.IsInvertable());
+
+    Matrix4f B({-4,2,-2,-3,9,6,2,6,0,-5,1,-5,0,0,0,0});
+    REQUIRE(B.Determinant() == 0);
+    REQUIRE_FALSE(B.IsInvertable());
+}
+
+TEST_CASE("Calculating the inverse matrix @ 4x4","[matrix]")
+{
+    Matrix4f A({-5,2,6,-8,1,-5,1,8,7,7,-6,-7,1,-3,7,4});
+    Matrix4f B = A.Inverted();
+    Matrix4f C(A);
+    C.Invert();
+
+    REQUIRE(A.Determinant()==532);
+    REQUIRE(A.Cofactor(2,3)==-160);
+    REQUIRE(B[3][2] == -160.f/532.f);
+    REQUIRE(A.Cofactor(3,2) == 105);
+    REQUIRE(B[2][3] == 105.f/532.f);
+    REQUIRE(B==C);
+}
