@@ -214,4 +214,24 @@ TEST_CASE("Calculating the inverse matrix @ 4x4","[matrix]")
     REQUIRE(A.Cofactor(3,2) == 105);
     REQUIRE(B[2][3] == 105.f/532.f);
     REQUIRE(B==C);
+
+    Matrix4f D({8,-5,9,2,7,5,6,1,-6,0,9,6,-3,0,-9,-4});
+    D.Invert();
+    REQUIRE(D[0][0] == Approx(-0.15385f).epsilon(.0001));
+    REQUIRE(D[0][1] == Approx(-0.15385f).epsilon(.0001));
+    REQUIRE(D[0][2] == Approx(-0.28205f).epsilon(.0001));
+    REQUIRE(D[0][3] == Approx(-0.53846f).epsilon(.0001));
+    REQUIRE(D[1][0] == Approx(-0.07692f).epsilon(.0001));
+    REQUIRE(D[1][1] == Approx( 0.12308f).epsilon(.0001));
+    REQUIRE(D[1][2] == Approx( 0.02564f).epsilon(.0001));
+    REQUIRE(D[1][3] == Approx( 0.03077f).epsilon(.0001));
+    REQUIRE(D[2][0] == Approx( 0.35897f).epsilon(.0001));
+    REQUIRE(D[2][1] == Approx( 0.35897f).epsilon(.0001));
+    REQUIRE(D[2][2] == Approx( 0.43590f).epsilon(.0001));
+    REQUIRE(D[2][3] == Approx( 0.92308f).epsilon(.0001));
+    REQUIRE(D[3][0] == Approx(-0.69231f).epsilon(.0001));
+    REQUIRE(D[3][1] == Approx(-0.69231f).epsilon(.0001));
+    REQUIRE(D[3][2] == Approx(-0.76923f).epsilon(.0001));
+    REQUIRE(D[3][3] == Approx(-1.92308f).epsilon(.0001));
+    
 }
