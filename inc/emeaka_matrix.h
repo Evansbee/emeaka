@@ -101,12 +101,12 @@ struct Matrix
 
     void Transpose()
     {
-        for (size_t row = 0; row < (N / 2); ++row)
+        for (size_t row = 0; row < N; ++row)
         {
-            for (size_t col = 0; col < (N / 2); ++col)
+            for (size_t col = row+1; col < N; ++col)
             {
                 float temp = d[row][col];
-                d[row][col] = d[row][col];
+                d[row][col] = d[col][row];
                 d[col][row] = temp;
             }
         }
@@ -230,7 +230,7 @@ std::ostream &operator<<(std::ostream &os, const Matrix<X> &m)
         os << "]";
         if (row < X - 1)
         {
-            os << ",";
+            os << "\n";
         }
     }
     os << "]";
@@ -240,3 +240,14 @@ std::ostream &operator<<(std::ostream &os, const Matrix<X> &m)
 template <>
 float Matrix<2>::Determinant() const;
 
+Matrix<4> Translation(float x, float y, float z);
+//Matrix<4> Translation(const Tuple& v);
+
+Matrix<4> Scaling(float s);
+Matrix<4> Scaling(float x, float y, float z);
+//Matrix<4> Scaling(const Tuple& scale);
+
+
+Matrix<4> RotationX(float r);
+Matrix<4> RotationY(float r);
+Matrix<4> RotationZ(float r);

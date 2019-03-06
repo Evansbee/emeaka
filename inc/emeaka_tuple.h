@@ -83,6 +83,7 @@ struct Tuple
     friend std::ostream& operator<<(std::ostream& os, const Tuple& t);
 };
 
+
 Tuple Point(float x, float y, float z);
 Tuple Vector(float x, float y, float z);
 float Dot(const Tuple& a, const Tuple& b);

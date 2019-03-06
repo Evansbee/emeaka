@@ -5,6 +5,10 @@
 //#include <intrin.h>
 
 
+inline float Pi()
+{
+   return (float)M_PI;
+}
 
 inline float Sqrt(float in)
 {

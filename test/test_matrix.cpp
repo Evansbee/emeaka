@@ -1,6 +1,7 @@
 #include "catch.hpp"
 #include "emeaka_matrix.h"
 #include "emeaka_tuple.h"
+#include "emeaka_intrinsics.h"
 #include <iostream>
 
 TEST_CASE("Matrix wtf","[matrix]")
@@ -102,7 +103,6 @@ TEST_CASE("Matrix Can Be Initialized With Initializer List","[matrix]")
     REQUIRE(m1[3][3] == 16);
     REQUIRE(m1[0][1] == 2);
     REQUIRE(m1[1][0] == 5);
-    std::cout<<m1<<std::endl;
 }
 
 TEST_CASE("Matrix Multiplication works","[matrix]")
@@ -125,7 +125,7 @@ TEST_CASE("Matrix Tuple mutliplication works","[matrix][tuple]")
     REQUIRE(identity * c == c);
 }
 
-TEST_CASE("Matrix transposition","[matrix")
+TEST_CASE("Matrix transposition","[matrix]")
 {
     Matrix4f A({0,9,3,0,9,8,0,8,1,8,5,3,0,0,5,8});
     Matrix4f B({0,9,1,0,9,8,8,0,3,0,5,5,0,8,3,8});
@@ -235,3 +235,65 @@ TEST_CASE("Calculating the inverse matrix @ 4x4","[matrix]")
     REQUIRE(D[3][3] == Approx(-1.92308f).epsilon(.0001));
     
 }
+
+TEST_CASE("Multiplication of a trsnlation matrix","[transform]")
+{
+    Matrix4f transform = Translation(5,-3,2);
+    Tuple p = Point(-3,4,5);
+    REQUIRE((transform * p) == Point(2,1,7));
+}
+
+TEST_CASE("Multiplying by the inverse of the xform","[transform]")
+{
+    Matrix4f transform = Translation(5,-3,2);
+    Matrix4f inv = transform.Inverted();
+    Tuple p = Point(-3,4,5);
+    REQUIRE((inv * p) == Point(-8,7,3));
+}
+
+TEST_CASE("Translation doesn't affect vectors","[transform]")
+{
+    Matrix4f transform = Translation(5,-3,2);
+    Tuple v = Vector(-3,4,5);
+    REQUIRE((transform * v)==v);
+}
+
+TEST_CASE("Scaling Matrix applied to a point","[transform]")
+{
+    Matrix4f transform = Scaling(2,3,4);
+    Tuple p = Point(-4,6,8);
+    REQUIRE((transform * p) == Point(-8,18,32));
+}
+
+TEST_CASE("Scaling Matrix applied to a vector","[transform]")
+{
+    Matrix4f transform = Scaling(2,3,4);
+    Tuple v = Vector(-4,6,8);
+    REQUIRE((transform * v) == Vector(-8,18,32));
+}
+
+TEST_CASE("Multiplying by the inverse of a scaling matrix","[transform]")
+{
+    Matrix4f t = Scaling(2,3,4);
+    Matrix4f i = t.Inverted();
+    Tuple v = Vector(-4,6,8);
+    REQUIRE((i * v) == Vector(-2,2,2));
+}
+
+TEST_CASE("Reflection is scaling by a negative value","[transform]")
+{
+    Matrix4f t = Scaling(-1,1,1);
+    Tuple p = Point(2,3,4);
+    REQUIRE((t * p) == Point(-2,3,4));
+}
+
+TEST_CASE("Rotate point around x axis","[transform]")
+{
+    Tuple p = Point(0,1,0);
+    Matrix4f half_quarter = RotationX( Pi() / 4.f);
+    Matrix4f full_quarter = RotationX(Pi() / 2.f);
+    REQUIRE((half_quarter * p) == Point(0, Sqrt(2)/2.f, Sqrt(2)/2.f));
+    CHECK((full_quarter * p) == Point(0, 0, 1));
+}
+
+//need more rotation matrices
