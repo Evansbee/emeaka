@@ -251,3 +251,5 @@ Matrix<4> Scaling(float x, float y, float z);
 Matrix<4> RotationX(float r);
 Matrix<4> RotationY(float r);
 Matrix<4> RotationZ(float r);
+
+Matrix<4> Shearing(float Xy, float Xz, float Yx, float Yz, float Zx, float Zy);

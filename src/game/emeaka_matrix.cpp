@@ -54,3 +54,16 @@ Matrix<4> RotationZ(float r){
     rotationMatrix[1][1] = Cos(r);
     return rotationMatrix;
 }
+
+
+Matrix<4> Shearing(float Xy, float Xz, float Yx, float Yz, float Zx, float Zy)
+{
+    Matrix4f shearingMatrix;
+    shearingMatrix[0][1] = Xy;
+    shearingMatrix[0][2] = Xz;
+    shearingMatrix[1][0] = Yx;
+    shearingMatrix[1][2] = Yz;
+    shearingMatrix[2][0] = Zx;
+    shearingMatrix[2][1] = Zy;
+    return shearingMatrix;
+}
