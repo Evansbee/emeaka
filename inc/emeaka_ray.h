@@ -14,5 +14,5 @@ struct Ray
     }
     Tuple Origin;
     Tuple Direction;
-    Tuple Position(float distance) {return Origin + (Direction * t);}
-}
+    Tuple Position(float distance) {return Origin + (Direction * distance);}
+};

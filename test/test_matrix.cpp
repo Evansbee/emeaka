@@ -293,7 +293,11 @@ TEST_CASE("Rotate point around x axis","[transform]")
     Matrix4f half_quarter = RotationX( Pi() / 4.f);
     Matrix4f full_quarter = RotationX(Pi() / 2.f);
     REQUIRE((half_quarter * p) == Point(0, Sqrt(2)/2.f, Sqrt(2)/2.f));
-    CHECK((full_quarter * p) == Point(0, 0, 1));
+    Tuple result = full_quarter * p;
+    Tuple required_result = Point(0,0,1);
+    REQUIRE(result.x == Approx(required_result.x));
+    REQUIRE(result.y == Approx(required_result.y).margin(.0001));
+    REQUIRE(result.z == Approx(required_result.z));
 }
 
 //need more rotation matrices
