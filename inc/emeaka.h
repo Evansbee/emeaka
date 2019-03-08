@@ -139,4 +139,5 @@ struct GameState
   float centerTime;
   LogEntry *Logger;
   BitmapData testBitmap;
+  float GameTime;
 };

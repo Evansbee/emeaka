@@ -276,6 +276,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
 
    if (!gameMemory->IsInitialized)
    {
+      gameState->GameTime = 0.f;
       gameState->PlayerPos.Tile.x = 5;
       gameState->PlayerPos.Tile.y = 30;
       gameState->PlayerPos.Tile.z = 0;
@@ -304,7 +305,7 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
       AddToLog(&gameState->Logger,&gameState->WorldMemoryBank,"[NOTICE] Game Memory Initialized", color, 5.0f, 1.0f);
    }
 
-
+   gameState->GameTime += gameClocks->UpdateDT;
 
 
    if(inputBuffer->KeyboardInput.Key[KeyCode::R].IsDown)
@@ -377,6 +378,23 @@ extern "C" void GameUpdateAndRender(ThreadContext *threadContext, GameMemory *ga
 
    DrawCircle(offscreenBuffer,right,150,0.0f,0,1,rightalpha);
    StrokeCircle(offscreenBuffer,right,150,1.f,1.f,1.f);
+   
+   for(auto y = 0; y < offscreenBuffer->TextureHeight; ++y)
+   {
+   for(auto x = 0; x < offscreenBuffer->TextureWidth; ++x)
+   {
+      float octaves = 2;
+      float ratio = (float)offscreenBuffer->TextureWidth/(float)offscreenBuffer->TextureHeight;
+      float fx = octaves * ratio * (float)x/(float)offscreenBuffer->TextureWidth;
+      float fy = octaves * (float)y/(float)offscreenBuffer->TextureHeight;
+      float val = (Simplex3D(fx,fy,gameState->GameTime) + 1.f)/2.f;
+      
+      DrawPixel(offscreenBuffer,vec2i(x,y),val,val,val);
+   }
+   }
+   
+   
+   
    char memorydiag[256];
    snprintf(memorydiag,256,"Used: %zuKB/%zuKB, Entries: %zu",gameState->WorldMemoryBank.Used/KiloBytes(1),gameState->WorldMemoryBank.Size/KiloBytes(1), gameState->WorldMemoryBank.Entries);
    const FontInformation* font = (offscreenBuffer->TextureHeight > offscreenBuffer->WindowHeight)?(&DejaVuSansMono24ptFont):(&DejaVuSansMono12ptFont);
